@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "houearth"
+version = "0.1.0"
+description = "Open TESS transit search and candidate-vetting toolkit"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "HOU-EARTH Project"}]
+dependencies = [
+  "numpy>=1.24",
+  "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+tess = [
+  "astropy>=6.0",
+  "lightkurve>=2.6.0",
+  "matplotlib>=3.8",
+]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+houearth = "houearth.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
