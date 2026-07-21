@@ -9,12 +9,19 @@ from .search import search_periodic_transits, search_single_transits
 from .synthetic import make_synthetic_lightcurve
 
 
-def _run_pipeline(lc, output: Path, min_period: float, max_period: float | None) -> None:
+def _run_pipeline(
+    lc,
+    output: Path,
+    min_period: float,
+    max_period: float | None,
+    period_steps: int,
+) -> None:
     output.mkdir(parents=True, exist_ok=True)
     periodic = search_periodic_transits(
         lc,
         min_period=min_period,
         max_period=max_period,
+        period_steps=period_steps,
     )
     events = search_single_transits(lc)
 
@@ -46,6 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
     synthetic.add_argument("--output", type=Path, default=Path("outputs/synthetic-demo"))
     synthetic.add_argument("--min-period", type=float, default=2.0)
     synthetic.add_argument("--max-period", type=float, default=15.0)
+    synthetic.add_argument("--period-steps", type=int, default=700)
 
     tess = sub.add_parser("tess", help="download and search public TESS data")
     tess.add_argument("target")
@@ -54,6 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
     tess.add_argument("--output", type=Path, default=Path("outputs/tess-target"))
     tess.add_argument("--min-period", type=float, default=1.0)
     tess.add_argument("--max-period", type=float, default=None)
+    tess.add_argument("--period-steps", type=int, default=700)
     return parser
 
 
@@ -66,14 +75,26 @@ def main() -> None:
             depth=args.depth,
             baseline=args.baseline,
         )
-        _run_pipeline(lc, args.output, args.min_period, args.max_period)
+        _run_pipeline(
+            lc,
+            args.output,
+            args.min_period,
+            args.max_period,
+            args.period_steps,
+        )
         return
 
     sector = args.sector
     if sector is not None and len(sector) == 1:
         sector = sector[0]
     lc = download_tess_lightcurve(args.target, author=args.author, sector=sector)
-    _run_pipeline(lc, args.output, args.min_period, args.max_period)
+    _run_pipeline(
+        lc,
+        args.output,
+        args.min_period,
+        args.max_period,
+        args.period_steps,
+    )
 
 
 if __name__ == "__main__":
