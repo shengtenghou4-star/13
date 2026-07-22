@@ -17,6 +17,12 @@ from .protocol_validation import (
     ProtocolValidationReport,
     validate_phase07_summary,
 )
+from .provenance import (
+    HASH_SCHEMA,
+    canonical_array_sha256,
+    canonical_json_sha256,
+    lightcurve_array_hashes,
+)
 from .real_evaluation import (
     NullScreenResult,
     RealCompletenessCell,
@@ -38,6 +44,7 @@ from .surrogates import SurrogateSummary, SurrogateTrial, run_surrogate_null_cam
 
 __all__ = [
     "CompletenessCell",
+    "HASH_SCHEMA",
     "LightCurve",
     "LightCurveStratum",
     "NullScreenResult",
@@ -55,10 +62,13 @@ __all__ = [
     "SurrogateSummary",
     "SurrogateTrial",
     "calibrate_physical_trials",
+    "canonical_array_sha256",
+    "canonical_json_sha256",
     "classify_lightcurve",
     "empirical_familywise_p",
     "exposure_averaged_single_transit_decrement",
     "inject_physical_single_transit",
+    "lightcurve_array_hashes",
     "physical_single_event_search_durations",
     "physical_single_transit_decrement",
     "run_physical_campaign",
