@@ -22,7 +22,7 @@ def test_classify_lightcurve_uses_tess_metadata() -> None:
     assert stratum.magnitude_bin == "10to12"
     assert stratum.crowding_bin == "mixed"
     assert stratum.scatter_bin == "low"
-    assert stratum.cadence_bin == "30min-plus"
+    assert stratum.cadence_bin == "20min"
     assert stratum.sectors == "7"
     assert stratum.cameras == "2"
     assert stratum.ccds == "4"
