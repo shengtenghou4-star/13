@@ -43,6 +43,14 @@ jobs:
       - run: python -m pip install -e '.[dev]'
       - name: Verify development package version
         run: python -c "import houearth; assert houearth.__version__ == '0.8.0.dev0'"
+      - name: Test blind table construction
+        run: pytest -q tests/test_candidate_freeze.py tests/test_candidate_freeze_guardrails.py
+      - name: Test closed candidate table schemas
+        run: pytest -q tests/test_candidate_closed_schema.py
+      - name: Test independent candidate table validation attacks
+        run: pytest -q tests/test_candidate_protocol_validation.py
+      - name: Test complete machine event evidence attacks
+        run: pytest -q tests/test_candidate_evidence.py
       - name: Run full repository test suite
         run: pytest -q
       - name: Run original synthetic CLI smoke test
