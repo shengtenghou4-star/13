@@ -12,6 +12,10 @@ from .core import LightCurve, SingleTransitEvent
 from .search import search_single_transits
 
 
+GAP_AWARE_METHOD = "gap-aware-circular-moving-block-bootstrap"
+DEFAULT_GAP_FACTOR = 3.5
+
+
 @dataclass(frozen=True)
 class SurrogateTrial:
     target: str
@@ -19,6 +23,8 @@ class SurrogateTrial:
     seed: int
     method: str
     block_days: float
+    contiguous_segments: int
+    gap_factor: float
     neutralized_events: int
     neutralized_points: int
     dimming_events: int
@@ -38,6 +44,9 @@ class SurrogateSummary:
     sector_label: str
     trials: int
     detection_threshold: float
+    minimum_segments: int
+    maximum_segments: int
+    gap_factor: float
     neutralized_events: int
     neutralized_points: int
     trials_with_dimming_events: int
@@ -65,16 +74,37 @@ def _sector_label(lc: LightCurve) -> str:
 def _contiguous_segments(
     time: np.ndarray,
     cadence: float,
-    gap_factor: float = 3.5,
+    gap_factor: float = DEFAULT_GAP_FACTOR,
 ) -> list[slice]:
+    """Return non-empty observing segments separated by large cadence gaps."""
+    if gap_factor <= 1.0:
+        raise ValueError("gap_factor must be greater than 1")
+    time = np.asarray(time, dtype=float)
+    if len(time) == 0:
+        return []
     breaks = np.flatnonzero(np.diff(time) > gap_factor * cadence) + 1
     starts = np.concatenate([[0], breaks])
     stops = np.concatenate([breaks, [len(time)]])
     return [
         slice(int(start), int(stop))
         for start, stop in zip(starts, stops)
-        if stop - start >= 4
+        if stop > start
     ]
+
+
+def _segment_normalized_residuals(
+    lc: LightCurve,
+    segments: Sequence[slice],
+) -> np.ndarray:
+    """Normalize each contiguous observing segment independently."""
+    residual = np.empty(len(lc.time), dtype=float)
+    for segment in segments:
+        values = np.asarray(lc.flux[segment], dtype=float)
+        baseline = float(np.median(values))
+        if not np.isfinite(baseline) or baseline == 0:
+            raise ValueError("cannot normalize a segment with zero/invalid median flux")
+        residual[segment] = values / baseline - 1.0
+    return residual
 
 
 def _neutralize_event_windows(
@@ -83,31 +113,63 @@ def _neutralize_event_windows(
     events: Sequence[SingleTransitEvent],
     *,
     cadence: float,
+    segments: Sequence[slice],
     padding: float = 1.5,
 ) -> tuple[np.ndarray, int]:
-    """Interpolate over detected excursions before constructing null surrogates.
+    """Interpolate event windows only within their contiguous observing segment.
 
-    Known or pre-detected dimming and brightening events are not valid samples of the
-    no-event background.  They are removed non-destructively with interpolation over
-    the surrounding observed residuals.  The number of replaced cadences is retained
-    in the evidence record.
+    The interpolation never uses samples across a TESS downlink or quality gap. This
+    prevents an event close to a segment boundary from borrowing an unrelated baseline
+    from the next observing segment.
     """
     if padding <= 0:
         raise ValueError("padding must be positive")
     cleaned = np.array(residual, dtype=float, copy=True)
-    mask = np.zeros(len(cleaned), dtype=bool)
-    for event in events:
-        duration = max(float(event.duration_days), 2.0 * cadence)
-        half_width = 0.5 * padding * duration
-        mask |= np.abs(time - float(event.center_time_days)) <= half_width
-    if not np.any(mask):
-        return cleaned, 0
+    replaced = 0
 
-    valid = (~mask) & np.isfinite(cleaned) & np.isfinite(time)
-    if np.count_nonzero(valid) < 2:
-        raise RuntimeError("Too few unmasked cadences to neutralize detected events")
-    cleaned[mask] = np.interp(time[mask], time[valid], cleaned[valid])
-    return cleaned, int(np.count_nonzero(mask))
+    for segment in segments:
+        segment_time = np.asarray(time[segment], dtype=float)
+        segment_values = np.asarray(cleaned[segment], dtype=float)
+        mask = np.zeros(len(segment_values), dtype=bool)
+        for event in events:
+            duration = max(float(event.duration_days), 2.0 * cadence)
+            half_width = 0.5 * padding * duration
+            mask |= (
+                np.abs(segment_time - float(event.center_time_days)) <= half_width
+            )
+        if not np.any(mask):
+            continue
+
+        valid = (~mask) & np.isfinite(segment_values) & np.isfinite(segment_time)
+        if np.count_nonzero(valid) < 2:
+            raise RuntimeError(
+                "Too few unmasked cadences within a contiguous segment to neutralize "
+                "detected events"
+            )
+        segment_values[mask] = np.interp(
+            segment_time[mask], segment_time[valid], segment_values[valid]
+        )
+        cleaned[segment] = segment_values
+        replaced += int(np.count_nonzero(mask))
+
+    return cleaned, replaced
+
+
+def _circular_moving_block_indices(
+    length: int,
+    *,
+    block_points: int,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """Draw circular overlapping-block indices for one contiguous segment."""
+    if length <= 0:
+        return np.array([], dtype=int)
+    width = min(max(1, int(block_points)), length)
+    block_count = int(math.ceil(length / width))
+    starts = rng.integers(0, length, size=block_count)
+    offsets = np.arange(width)
+    indices = (starts[:, None] + offsets[None, :]) % length
+    return indices.reshape(-1)[:length]
 
 
 def _circular_moving_block_bootstrap(
@@ -118,14 +180,10 @@ def _circular_moving_block_bootstrap(
 ) -> np.ndarray:
     """Resample circular overlapping blocks to preserve short-range covariance."""
     values = np.asarray(values, dtype=float)
-    if len(values) == 0:
-        return values.copy()
-    width = min(max(4, int(block_points)), len(values))
-    block_count = int(math.ceil(len(values) / width))
-    starts = rng.integers(0, len(values), size=block_count)
-    offsets = np.arange(width)
-    indices = (starts[:, None] + offsets[None, :]) % len(values)
-    return values[indices].reshape(-1)[: len(values)]
+    indices = _circular_moving_block_indices(
+        len(values), block_points=block_points, rng=rng
+    )
+    return values[indices]
 
 
 def block_permuted_surrogate(
@@ -134,50 +192,62 @@ def block_permuted_surrogate(
     block_days: float = 0.5,
     seed: int = 0,
     excluded_events: Sequence[SingleTransitEvent] = (),
+    gap_factor: float = DEFAULT_GAP_FACTOR,
 ) -> LightCurve:
-    """Create an event-neutralized moving-block bootstrap null light curve.
+    """Create a gap-aware moving-block bootstrap null light curve.
 
-    Timestamps, observing gaps, uncertainties, and short-range residual covariance are
-    retained.  Detected astrophysical or instrumental excursions are interpolated out
-    before circular overlapping blocks are sampled with replacement.  Unlike the
-    earlier pilot implementation, residual signs are not flipped, so flare/dimming
-    asymmetry and the one-point residual distribution are not artificially symmetrized.
+    Timestamps and observing gaps remain fixed. Residuals and their corresponding
+    uncertainties are resampled with identical indices *within* each contiguous
+    observing segment; no block may cross a downlink or quality gap. Residual signs are
+    never flipped, so flare/dimming asymmetry is not artificially symmetrized.
     """
     if block_days <= 0:
         raise ValueError("block_days must be positive")
-    normalized = lc.normalized()
-    residual = normalized.flux - 1.0
+    if gap_factor <= 1.0:
+        raise ValueError("gap_factor must be greater than 1")
+
+    cadence = lc.cadence
+    segments = _contiguous_segments(lc.time, cadence, gap_factor)
+    if not segments:
+        raise RuntimeError("no contiguous observing segments available")
+
+    residual = _segment_normalized_residuals(lc, segments)
     residual, neutralized_points = _neutralize_event_windows(
-        normalized.time,
+        lc.time,
         residual,
         excluded_events,
-        cadence=normalized.cadence,
+        cadence=cadence,
+        segments=segments,
     )
-    output = np.array(residual, copy=True)
-    rng = np.random.default_rng(seed)
-    block_points = max(4, int(round(block_days / normalized.cadence)))
 
-    segments = _contiguous_segments(normalized.time, normalized.cadence)
-    covered = np.zeros(len(output), dtype=bool)
+    output = np.empty_like(residual)
+    output_err = None if lc.flux_err is None else np.empty_like(lc.flux_err)
+    rng = np.random.default_rng(seed)
+    block_points = max(1, int(round(block_days / cadence)))
+
     for segment in segments:
-        covered[segment] = True
-        output[segment] = _circular_moving_block_bootstrap(
-            residual[segment],
+        segment_length = segment.stop - segment.start
+        indices = _circular_moving_block_indices(
+            segment_length,
             block_points=block_points,
             rng=rng,
         )
-    output[~covered] = residual[~covered]
+        output[segment] = residual[segment][indices]
+        if output_err is not None:
+            output_err[segment] = lc.flux_err[segment][indices]
 
     return LightCurve(
-        normalized.time,
+        lc.time,
         1.0 + output,
-        normalized.flux_err,
-        target=normalized.target,
+        output_err,
+        target=lc.target,
         metadata={
-            **normalized.metadata,
-            "surrogate": "event-neutralized-circular-moving-block-bootstrap",
+            **lc.metadata,
+            "surrogate": GAP_AWARE_METHOD,
             "surrogate_seed": seed,
             "surrogate_block_days": block_days,
+            "surrogate_gap_factor": gap_factor,
+            "surrogate_contiguous_segments": len(segments),
             "surrogate_neutralized_events": len(excluded_events),
             "surrogate_neutralized_points": neutralized_points,
         },
@@ -197,23 +267,26 @@ def run_surrogate_null_campaign(
     min_snr: float = 5.0,
     flatten_window_days: float = 1.5,
     excluded_events: Sequence[SingleTransitEvent] = (),
+    gap_factor: float = DEFAULT_GAP_FACTOR,
 ) -> tuple[list[SurrogateTrial], SurrogateSummary]:
     """Measure empirical no-injection extrema without conditioning on detections.
 
     Every surrogate is searched with an effectively zero probe threshold so its true
-    maximum statistic enters the empirical distribution.  The operational ``min_snr``
+    maximum statistic enters the empirical distribution. The operational ``min_snr``
     threshold is applied afterwards when false-alarm exceedances are counted.
     """
     if min_snr <= 0:
         raise ValueError("min_snr must be positive")
     trials: list[SurrogateTrial] = []
     probe_snr = 1e-6
+
     for seed_value in seeds:
         surrogate = block_permuted_surrogate(
             lc,
             block_days=block_days,
             seed=int(seed_value),
             excluded_events=excluded_events,
+            gap_factor=gap_factor,
         )
         dimming_all = search_single_transits(
             surrogate,
@@ -235,13 +308,21 @@ def run_surrogate_null_campaign(
         maximum_brightening = max((event.snr for event in brightening_all), default=None)
         dimming_events = sum(event.snr >= min_snr for event in dimming_all)
         brightening_events = sum(event.snr >= min_snr for event in brightening_all)
+        segment_count = int(
+            surrogate.metadata.get("surrogate_contiguous_segments", 0)
+        )
+        recorded_gap_factor = float(
+            surrogate.metadata.get("surrogate_gap_factor", gap_factor)
+        )
         trials.append(
             SurrogateTrial(
                 target=lc.target,
                 sector_label=_sector_label(lc),
                 seed=int(seed_value),
-                method="event-neutralized-circular-moving-block-bootstrap",
+                method=GAP_AWARE_METHOD,
                 block_days=block_days,
+                contiguous_segments=segment_count,
+                gap_factor=recorded_gap_factor,
                 neutralized_events=len(excluded_events),
                 neutralized_points=int(
                     surrogate.metadata.get("surrogate_neutralized_points", 0)
@@ -265,6 +346,7 @@ def run_surrogate_null_campaign(
 
     if not trials:
         raise ValueError("at least one surrogate seed is required")
+
     dimming_maxima = [
         float(trial.maximum_dimming_snr)
         for trial in trials
@@ -276,12 +358,19 @@ def run_surrogate_null_campaign(
         if trial.maximum_brightening_snr is not None
     ]
     dimming_exceedances = sum(trial.exceeded_dimming_threshold for trial in trials)
-    brightening_exceedances = sum(trial.exceeded_brightening_threshold for trial in trials)
+    brightening_exceedances = sum(
+        trial.exceeded_brightening_threshold for trial in trials
+    )
+    segment_counts = [trial.contiguous_segments for trial in trials]
+
     summary = SurrogateSummary(
         target=lc.target,
         sector_label=_sector_label(lc),
         trials=len(trials),
         detection_threshold=min_snr,
+        minimum_segments=min(segment_counts),
+        maximum_segments=max(segment_counts),
+        gap_factor=gap_factor,
         neutralized_events=len(excluded_events),
         neutralized_points=max(trial.neutralized_points for trial in trials),
         trials_with_dimming_events=dimming_exceedances,
@@ -291,7 +380,9 @@ def run_surrogate_null_campaign(
         median_maximum_dimming_snr=_quantile(dimming_maxima, 0.50),
         p90_maximum_dimming_snr=_quantile(dimming_maxima, 0.90),
         p95_maximum_dimming_snr=_quantile(dimming_maxima, 0.95),
-        maximum_dimming_snr=None if not dimming_maxima else float(max(dimming_maxima)),
+        maximum_dimming_snr=(
+            None if not dimming_maxima else float(max(dimming_maxima))
+        ),
         median_maximum_brightening_snr=_quantile(brightening_maxima, 0.50),
         p95_maximum_brightening_snr=_quantile(brightening_maxima, 0.95),
     )
