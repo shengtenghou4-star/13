@@ -1,3 +1,5 @@
+import pytest
+
 from houearth.physical_evaluation import PhysicalInjectionTrial
 from houearth.surrogate_significance import (
     calibrate_physical_trials,
@@ -7,7 +9,9 @@ from houearth.surrogate_significance import (
 from houearth.surrogates import SurrogateTrial
 
 
-def physical_trial(*, snr: float | None, recovered: bool, seed: int = 0) -> PhysicalInjectionTrial:
+def physical_trial(
+    *, snr: float | None, recovered: bool, seed: int = 0
+) -> PhysicalInjectionTrial:
     return PhysicalInjectionTrial(
         target="star-a",
         sector_label="1",
@@ -67,10 +71,20 @@ def test_calibration_reports_resolution_and_significance() -> None:
     )
     assert len(rows) == 3
     assert abs(rows[0].minimum_resolvable_p - 1.0 / 65.0) < 1e-12
+    assert rows[0].significance_alpha == 0.05
     assert rows[0].empirical_familywise_p == 1.0 / 65.0
     assert rows[0].significant_at_0_05 is True
     assert rows[1].significant_at_0_05 is False
     assert rows[2].empirical_familywise_p is None
+
+
+def test_phase07_schema_rejects_a_different_alpha() -> None:
+    with pytest.raises(ValueError, match="frozen at alpha=0.05"):
+        calibrate_physical_trials(
+            [physical_trial(snr=20.0, recovered=True)],
+            [surrogate_trial(index, 5.0) for index in range(64)],
+            alpha=0.10,
+        )
 
 
 def test_calibrated_summary_distinguishes_recovery_from_significance() -> None:
@@ -89,6 +103,9 @@ def test_calibrated_summary_distinguishes_recovery_from_significance() -> None:
     cell = cells[0]
     assert cell.trials == 4
     assert cell.recovered == 2
+    assert cell.significance_alpha == 0.05
     assert cell.significant_recoveries_0_05 == 1
     assert cell.significant_completeness_0_05 == 0.25
+    assert cell.significant_confidence_low_0_05 < 0.25
+    assert cell.significant_confidence_high_0_05 > 0.25
     assert cell.fraction_of_recoveries_significant_0_05 == 0.5
