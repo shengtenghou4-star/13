@@ -17,6 +17,7 @@ from .real_evaluation import (
     wilson_interval,
 )
 from .search import search_single_transits
+from .search_grids import physical_single_event_search_durations
 
 
 @dataclass(frozen=True)
@@ -211,7 +212,11 @@ def summarize_physical_trials(
     for (target, sector, depth, duration, impact), group in sorted(grouped.items()):
         recovered = [trial for trial in group if trial.recovered]
         low, high = wilson_interval(len(recovered), len(group))
-        snrs = [trial.recovered_snr for trial in recovered if trial.recovered_snr is not None]
+        snrs = [
+            trial.recovered_snr
+            for trial in recovered
+            if trial.recovered_snr is not None
+        ]
         margins = [
             trial.snr_above_matched_control
             for trial in recovered
@@ -234,11 +239,15 @@ def summarize_physical_trials(
                 completeness=len(recovered) / len(group),
                 confidence_low=low,
                 confidence_high=high,
-                median_recovered_snr=None if not snrs else float(np.median(snrs)),
+                median_recovered_snr=(
+                    None if not snrs else float(np.median(snrs))
+                ),
                 median_snr_above_matched_control=(
                     None if not margins else float(np.median(margins))
                 ),
-                median_timing_error_days=None if not timing else float(np.median(timing)),
+                median_timing_error_days=(
+                    None if not timing else float(np.median(timing))
+                ),
             )
         )
     return cells
@@ -264,13 +273,7 @@ def run_physical_campaign(
     list[PhysicalCompletenessCell],
 ]:
     durations = tuple(float(value) for value in durations_days)
-    search_durations = tuple(
-        sorted(
-            {max(0.02, 0.65 * value) for value in durations}
-            | set(durations)
-            | {1.45 * value for value in durations}
-        )
-    )
+    search_durations = physical_single_event_search_durations(durations)
     null_screen, background, brightening = screen_real_lightcurve(
         lc,
         durations=search_durations,
@@ -298,7 +301,13 @@ def run_physical_campaign(
         for impact in impact_parameters
         for seed in seeds
     ]
-    return null_screen, background, brightening, trials, summarize_physical_trials(trials)
+    return (
+        null_screen,
+        background,
+        brightening,
+        trials,
+        summarize_physical_trials(trials),
+    )
 
 
 def write_physical_outputs(
