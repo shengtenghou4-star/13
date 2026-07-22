@@ -10,6 +10,18 @@ on:
       - "src/houearth/core.py"
       - "src/houearth/io.py"
       - "src/houearth/real_evaluation.py"
+      - "src/houearth/real_reporting.py"
+      - "src/houearth/search.py"
+      - "src/houearth/preprocess.py"
+  pull_request:
+    paths:
+      - ".github/workflows/real-data-calibration.yml"
+      - "data/real_calibration_targets.csv"
+      - "examples/run_real_calibration_batch.py"
+      - "src/houearth/core.py"
+      - "src/houearth/io.py"
+      - "src/houearth/real_evaluation.py"
+      - "src/houearth/real_reporting.py"
       - "src/houearth/search.py"
       - "src/houearth/preprocess.py"
 
