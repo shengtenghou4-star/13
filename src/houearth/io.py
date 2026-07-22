@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 
 from .core import LightCurve
+from .provenance import canonical_json_sha256, lightcurve_array_hashes
 
 
 def _json_scalar(value: Any) -> Any:
@@ -29,7 +30,7 @@ def download_tess_lightcurve(
     sector: int | list[int] | None = None,
     max_products: int | None = None,
 ) -> LightCurve:
-    """Download and stitch public TESS light curves through Lightkurve/MAST."""
+    """Download, stitch, and fingerprint public TESS light curves."""
     try:
         import lightkurve as lk
     except ImportError as exc:  # pragma: no cover - optional dependency
@@ -107,6 +108,16 @@ def download_tess_lightcurve(
             product.setdefault("sector", int(getattr(curve, "sector")))
         products.append(product)
 
+    array_hashes = lightcurve_array_hashes(time, flux, flux_err)
+    query_provenance = {
+        "target": target,
+        "author_filter_requested": author,
+        "author_filter_used": author_used,
+        "sector_requested": sector,
+        "max_products": max_products,
+        "sectors_downloaded": sectors,
+        "product_provenance": products,
+    }
     return LightCurve(
         time,
         flux,
@@ -119,6 +130,9 @@ def download_tess_lightcurve(
             "sectors": sectors,
             "products": len(collection),
             "product_provenance": products,
+            "product_provenance_sha256": canonical_json_sha256(products),
+            "query_provenance_sha256": canonical_json_sha256(query_provenance),
+            "analyzed_array_hashes": array_hashes,
             "max_products": max_products,
         },
     )
