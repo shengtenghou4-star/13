@@ -17,7 +17,7 @@ def test_classify_lightcurve_uses_tess_metadata_and_separates_scales() -> None:
             "product_provenance": [
                 {"tessmag": 10.8, "crowdsap": 0.91, "camera": 2, "ccd": 4}
             ],
-            "analyzed_array_hashes": {
+            "campaign_input_array_hashes": {
                 "schema": HASH_SCHEMA,
                 "combined_sha256": "a" * 64,
             },
@@ -39,8 +39,8 @@ def test_classify_lightcurve_uses_tess_metadata_and_separates_scales() -> None:
     assert stratum.sectors == "7"
     assert stratum.cameras == "2"
     assert stratum.ccds == "4"
-    assert stratum.array_hash_schema == HASH_SCHEMA
-    assert stratum.analyzed_combined_sha256 == "a" * 64
+    assert stratum.campaign_input_hash_schema == HASH_SCHEMA
+    assert stratum.campaign_input_combined_sha256 == "a" * 64
     assert stratum.product_provenance_sha256 == "b" * 64
     assert stratum.query_provenance_sha256 == "c" * 64
 
@@ -62,4 +62,4 @@ def test_correlation_metric_distinguishes_white_and_red_noise() -> None:
     assert abs(white_stratum.lag1_autocorrelation) < 0.2
     assert red_stratum.lag1_autocorrelation > 0.7
     assert red_stratum.variability_to_point_ratio > white_stratum.variability_to_point_ratio
-    assert white_stratum.analyzed_combined_sha256 is None
+    assert white_stratum.campaign_input_combined_sha256 is None
