@@ -4,10 +4,17 @@ from houearth.protocol_validation import (
     ProtocolValidationError,
     validate_phase07_summary,
 )
+from houearth.provenance import HASH_SCHEMA
 from houearth.search_grids import physical_single_event_search_durations
 
 
 SEARCH_DURATIONS = physical_single_event_search_durations((0.08, 0.16))
+VALID_STRATUM = {
+    "array_hash_schema": HASH_SCHEMA,
+    "analyzed_combined_sha256": "a" * 64,
+    "product_provenance_sha256": "b" * 64,
+    "query_provenance_sha256": "c" * 64,
+}
 
 
 def summary_fixture() -> dict[str, object]:
@@ -18,6 +25,7 @@ def summary_fixture() -> dict[str, object]:
                 "target_id": target_id,
                 "status": "completed",
                 "surrogate_policy": "unmasked-null",
+                "stratum": dict(VALID_STRATUM),
                 "physical_trials": 32,
                 "surrogate_trials": 64,
                 "surrogate_summary": {
@@ -32,6 +40,7 @@ def summary_fixture() -> dict[str, object]:
                 "target_id": target_id,
                 "status": "completed",
                 "surrogate_policy": "skip-known-transits",
+                "stratum": dict(VALID_STRATUM),
                 "physical_trials": 32,
                 "surrogate_trials": 0,
                 "surrogate_summary": {"status": "skipped"},
