@@ -1,5 +1,13 @@
 """HOU-EARTH: an auditable transit-search and calibration toolkit."""
 
+from .candidate_evidence import (
+    CandidateEvidenceValidationError,
+    CandidateEvidenceValidationReport,
+    FrozenCandidateEvidence,
+    freeze_candidate_evidence,
+    validate_candidate_evidence,
+    write_candidate_evidence,
+)
 from .candidate_freeze import (
     BlindCandidateInput,
     FrozenCandidateRecord,
@@ -68,10 +76,13 @@ from .surrogates import (
 
 __all__ = [
     "BlindCandidateInput",
+    "CandidateEvidenceValidationError",
+    "CandidateEvidenceValidationReport",
     "CandidateProtocolValidationError",
     "CandidateProtocolValidationReport",
     "CompletenessCell",
     "DEFAULT_GAP_FACTOR",
+    "FrozenCandidateEvidence",
     "FrozenCandidateRecord",
     "FrozenCandidateTable",
     "GAP_AWARE_METHOD",
@@ -101,6 +112,7 @@ __all__ = [
     "classify_lightcurve",
     "empirical_familywise_p",
     "exposure_averaged_single_transit_decrement",
+    "freeze_candidate_evidence",
     "freeze_candidate_table",
     "inject_physical_single_transit",
     "lightcurve_array_hashes",
@@ -112,10 +124,12 @@ __all__ = [
     "search_periodic_transits",
     "search_single_transits",
     "summarize_surrogate_calibrated_trials",
+    "validate_candidate_evidence",
     "validate_frozen_candidate_table",
     "validate_phase07_gap_summary",
     "validate_phase07_summary",
     "wilson_interval",
+    "write_candidate_evidence",
     "write_frozen_candidate_table",
 ]
 
