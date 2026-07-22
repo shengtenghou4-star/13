@@ -4,18 +4,25 @@ from houearth.protocol_validation import (
     ProtocolValidationError,
     validate_phase07_summary,
 )
+from houearth.search_grids import physical_single_event_search_durations
+
+
+SEARCH_DURATIONS = physical_single_event_search_durations((0.08, 0.16))
 
 
 def target(target_id: str, policy: str, *, completed: bool = True) -> dict[str, object]:
     surrogate_count = 64 if policy == "unmasked-null" else 0
     surrogate_status = "completed" if policy == "unmasked-null" else "skipped"
+    surrogate_summary: dict[str, object] = {"status": surrogate_status}
+    if policy == "unmasked-null":
+        surrogate_summary["search_durations_days"] = SEARCH_DURATIONS
     return {
         "target_id": target_id,
         "status": "completed" if completed else "failed",
         "surrogate_policy": policy,
         "physical_trials": 32 if completed else 0,
         "surrogate_trials": surrogate_count if completed else 0,
-        "surrogate_summary": {"status": surrogate_status},
+        "surrogate_summary": surrogate_summary,
     }
 
 
@@ -30,6 +37,7 @@ def valid_summary() -> dict[str, object]:
     ]
     return {
         "targets": targets,
+        "search_durations_days": SEARCH_DURATIONS,
         "total_physical_trials": 192,
         "total_surrogate_trials": 192,
         "minimum_resolvable_surrogate_p": 1.0 / 65.0,
@@ -84,7 +92,10 @@ def test_known_transit_host_cannot_produce_null_trials() -> None:
     summary = valid_summary()
     host = summary["targets"][3]
     host["surrogate_trials"] = 64
-    host["surrogate_summary"] = {"status": "completed"}
+    host["surrogate_summary"] = {
+        "status": "completed",
+        "search_durations_days": SEARCH_DURATIONS,
+    }
     summary["total_surrogate_trials"] = 256
     with pytest.raises(ProtocolValidationError) as captured:
         validate_phase07_summary(summary)
@@ -111,3 +122,29 @@ def test_nonfinite_or_malformed_summary_fields_are_rejected_not_crashed() -> Non
     errors = captured.value.report.errors
     assert any("malformed non-object" in error for error in errors)
     assert any("minimum empirical p resolution" in error for error in errors)
+
+
+def test_mismatched_surrogate_search_family_is_rejected() -> None:
+    summary = valid_summary()
+    summary["targets"][0]["surrogate_summary"]["search_durations_days"] = (
+        0.04,
+        0.08,
+        0.16,
+    )
+    with pytest.raises(ProtocolValidationError) as captured:
+        validate_phase07_summary(summary)
+    assert any(
+        "surrogate search-duration family is inconsistent" in error
+        for error in captured.value.report.errors
+    )
+
+
+def test_mismatched_root_search_family_is_rejected() -> None:
+    summary = valid_summary()
+    summary["search_durations_days"] = (0.04, 0.08, 0.16)
+    with pytest.raises(ProtocolValidationError) as captured:
+        validate_phase07_summary(summary)
+    assert any(
+        "root search-duration family is missing or inconsistent" in error
+        for error in captured.value.report.errors
+    )
