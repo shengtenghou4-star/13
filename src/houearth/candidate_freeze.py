@@ -107,7 +107,16 @@ def benjamini_hochberg_qvalues(p_values: Sequence[float]) -> list[float]:
     return adjusted
 
 
-def _validate_input(event: BlindCandidateInput) -> None:
+def _validated_duration_family(event: BlindCandidateInput) -> tuple[float, ...]:
+    durations = tuple(float(value) for value in event.search_duration_family_days)
+    if not durations or any(not math.isfinite(value) or value <= 0 for value in durations):
+        raise ValueError("search_duration_family_days must contain positive finite values")
+    if tuple(sorted(set(durations))) != durations:
+        raise ValueError("search_duration_family_days must be sorted and unique")
+    return durations
+
+
+def _validate_input(event: BlindCandidateInput) -> tuple[float, ...]:
     if not event.target_id.strip():
         raise ValueError("target_id must be non-empty")
     if not event.target_name.strip():
@@ -131,21 +140,22 @@ def _validate_input(event: BlindCandidateInput) -> None:
         raise ValueError("snr must be non-negative")
     if not 0 <= event.empirical_familywise_p <= 1:
         raise ValueError("empirical_familywise_p must lie in [0, 1]")
-    if event.source_event_index < 0 or isinstance(event.source_event_index, bool):
-        raise ValueError("source_event_index must be a non-negative integer")
+    if (
+        isinstance(event.source_event_index, bool)
+        or not isinstance(event.source_event_index, int)
+        or event.source_event_index < 0
+    ):
+        raise ValueError("source_event_index must be a non-negative exact integer")
     if not _SHA256_PATTERN.fullmatch(event.campaign_input_combined_sha256):
         raise ValueError("campaign_input_combined_sha256 must be lowercase SHA-256")
-    durations = tuple(float(value) for value in event.search_duration_family_days)
-    if not durations or any(not math.isfinite(value) or value <= 0 for value in durations):
-        raise ValueError("search_duration_family_days must contain positive finite values")
-    if tuple(sorted(set(durations))) != durations:
-        raise ValueError("search_duration_family_days must be sorted and unique")
+    durations = _validated_duration_family(event)
     for name, value in (
         ("matched_brightening_snr", event.matched_brightening_snr),
         ("snr_above_matched_control", event.snr_above_matched_control),
     ):
         if value is not None and not math.isfinite(float(value)):
             raise ValueError(f"{name} must be finite when present")
+    return durations
 
 
 def _selection_key(event: BlindCandidateInput) -> tuple[object, ...]:
@@ -223,9 +233,12 @@ def freeze_candidate_table(
         raise ValueError("table_fdr_alpha must lie in (0, 1)")
 
     grouped: dict[tuple[str, str], list[BlindCandidateInput]] = defaultdict(list)
+    duration_families: set[tuple[float, ...]] = set()
     for event in events:
-        _validate_input(event)
+        duration_families.add(_validate_input(event))
         grouped[(event.target_id, event.campaign_input_combined_sha256)].append(event)
+    if len(duration_families) > 1:
+        raise ValueError("all events in one frozen table must share one duration family")
 
     selected: list[tuple[BlindCandidateInput, int]] = []
     for group in grouped.values():
