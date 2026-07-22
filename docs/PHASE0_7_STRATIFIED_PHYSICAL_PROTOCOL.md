@@ -55,6 +55,16 @@ The requested depth is the **intrinsic instantaneous midpoint decrement**. The f
 
 Generic limb coefficients are a shape-stress test, not target-specific atmosphere modeling. Target-specific coefficients are a later gate.
 
+### Frozen matched-filter duration family
+
+The detector searches each requested physical duration at `0.65×`, `1.0×`, and `1.45×`. For the Phase 0.7 physical durations, the unique sorted family is:
+
+```text
+0.052, 0.08, 0.104, 0.116, 0.16, 0.232 days
+```
+
+`src/houearth/search_grids.py` is the single source of truth. Physical recovery, pre-injection event screening, brightening controls, and surrogate null maxima must use this exact family. A null distribution computed from a smaller search family is not accepted as a calibration of the physical recovery search.
+
 ## 4. Observed target strata
 
 Each downloaded light curve records:
@@ -81,7 +91,7 @@ For each eligible target:
 - timestamps, gaps, uncertainties, and local covariance retained;
 - no default residual sign flipping;
 - no blanket removal of detected stellar or instrumental excursions;
-- duration search grid: 0.04, 0.08, and 0.16 days.
+- the exact same six-duration search family used by physical recovery.
 
 The unmasked design is intentionally conservative: real excursions can be resampled and raise the empirical false-alarm threshold. Optional explicit event neutralization exists for later catalogue-masked experiments, but is not used for these three pilot null targets.
 
@@ -89,7 +99,7 @@ The planned null sample is `3 × 64 = 192` curves.
 
 ## 6. Empirical significance
 
-Every surrogate is searched with a near-zero probe threshold. Its maximum dimming SNR over all searched times and durations enters the null distribution, including trials whose maximum is below the operational 5-SNR screen.
+Every surrogate is searched with a near-zero probe threshold. Its maximum dimming SNR over all searched times and all six matched-filter durations enters the null distribution, including trials whose maximum is below the operational 5-SNR screen.
 
 For a recovered injected signal with statistic `s` and `N` surrogate maxima `m_i`, HOU-EARTH reports
 
@@ -119,6 +129,7 @@ Each successful target must retain:
 - pre-injection dimming and brightening events;
 - every physical injection trial and completeness cell;
 - every surrogate trial and null summary when eligible;
+- the exact search-duration family used;
 - every surrogate-calibrated physical trial;
 - significant-completeness cells at empirical alpha 0.05;
 - explicit skip evidence for known transit hosts.
@@ -133,8 +144,10 @@ The pilot is accepted only if:
 2. the synthetic CLI smoke test passes;
 3. at least four of six physical-injection targets complete;
 4. at least two of three null-eligible targets complete their 64-curve surrogate campaign;
-5. every evidence artifact is uploaded and frozen with its source commit;
-6. raw recovery and empirically significant recovery remain separately reported.
+5. physical and surrogate searches declare the same frozen six-duration family;
+6. every evidence artifact is uploaded and frozen with its source commit;
+7. raw recovery and empirically significant recovery remain separately reported;
+8. `examples/validate_stratified_outputs.py` writes an accepted `protocol_validation.json`.
 
 Failure of a target is evidence, not permission to change the grid after seeing results.
 
