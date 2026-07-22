@@ -153,7 +153,7 @@ def test_table_hash_changes_when_machine_evidence_changes() -> None:
         center=1.0,
         source_index=0,
     )
-    changed = replace(original, snr=12.1)
+    changed = replace(original, depth=0.00013)
     assert freeze([original]).table_sha256 != freeze([changed]).table_sha256
 
 
