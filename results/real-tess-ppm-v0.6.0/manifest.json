@@ -1,0 +1,41 @@
+{
+  "result_id": "real-tess-ppm-v0.6.0",
+  "status": "real TESS injection/recovery calibration; not a discovery search",
+  "software_version": "0.4.0",
+  "workflow_run_id": 29895755044,
+  "workflow_head_sha": "1304df106fc163b44916dabdbc8841dde9351225",
+  "artifact_id": 8519928557,
+  "artifact_name": "real-tess-ppm-batch",
+  "artifact_sha256": "235ae638bcc3e2ca6e1f4c8f5864542c86c67d0e94000e13986e4b2498d0b31c",
+  "targets_completed": 3,
+  "targets_failed": 0,
+  "planned_trials": 432,
+  "completed_trials": 432,
+  "depths": [0.00005, 0.0001, 0.0002],
+  "durations_days": [0.04, 0.08, 0.16],
+  "trials_per_target_cell": 16,
+  "headline_pooled_completeness": {
+    "50ppm_0.96h": 0.16666666666666666,
+    "50ppm_1.92h": 0.375,
+    "50ppm_3.84h": 0.6875,
+    "100ppm_0.96h": 0.7083333333333334,
+    "100ppm_1.92h": 0.8541666666666666,
+    "100ppm_3.84h": 0.9583333333333334,
+    "200ppm_0.96h": 0.9791666666666666,
+    "200ppm_1.92h": 1.0,
+    "200ppm_3.84h": 1.0
+  },
+  "target_heterogeneity": {
+    "HD_10700_100ppm_all_durations": "16/16 in each cell",
+    "HD_20794_100ppm_all_durations": "16/16 in each cell",
+    "HD_69830_100ppm_cells": ["2/16", "9/16", "14/16"]
+  },
+  "interpretation": "A duration-dependent sensitivity boundary is now directly measured on three real bright-star TESS products. 100 ppm is high-completeness overall but not uniformly reliable across targets; 200 ppm is near-saturated on this sample.",
+  "control_metric_caveat": "The v0.6 SNR-above-control value subtracts the single strongest brightening across all searched durations. It is deliberately conservative but duration-mismatched; the next engine version will use duration-matched empirical control distributions.",
+  "caveats": [
+    "Box-shaped injections are not yet limb-darkened transit models.",
+    "Three bright stars do not represent the full TESS population.",
+    "Recovery means detection near the injected time, not astrophysical validation.",
+    "The result measures one downloaded product per target."
+  ]
+}
