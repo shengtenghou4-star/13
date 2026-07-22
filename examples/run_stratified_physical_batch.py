@@ -15,6 +15,10 @@ from houearth.physical_evaluation import (
 )
 from houearth.real_evaluation import wilson_interval
 from houearth.stratification import LightCurveStratum, classify_lightcurve
+from houearth.surrogate_significance import (
+    calibrate_physical_trials,
+    summarize_surrogate_calibrated_trials,
+)
 from houearth.surrogates import run_surrogate_null_campaign, write_surrogate_outputs
 
 
@@ -138,6 +142,8 @@ for row in rows:
 
         surrogate_policy = row["surrogate_policy"]
         surrogate_trials_count = 0
+        significant_recoveries = 0
+        calibrated_recoveries = 0
         if surrogate_policy == "unmasked-null":
             stage = "red-noise-surrogates"
             surrogate_trials, surrogate_summary = run_surrogate_null_campaign(
@@ -148,14 +154,39 @@ for row in rows:
             )
             write_surrogate_outputs(surrogate_trials, surrogate_summary, output)
             surrogate_trials_count = len(surrogate_trials)
+
+            stage = "surrogate-significance"
+            calibrated_trials = calibrate_physical_trials(trials, surrogate_trials)
+            calibrated_cells = summarize_surrogate_calibrated_trials(calibrated_trials)
+            (output / "surrogate_calibrated_trials.json").write_text(
+                json.dumps(
+                    [trial.to_dict() for trial in calibrated_trials], indent=2
+                ),
+                encoding="utf-8",
+            )
+            (output / "surrogate_calibrated_completeness.json").write_text(
+                json.dumps([cell.to_dict() for cell in calibrated_cells], indent=2),
+                encoding="utf-8",
+            )
+            significant_recoveries = sum(
+                cell.significant_recoveries_0_05 for cell in calibrated_cells
+            )
+            calibrated_recoveries = sum(
+                cell.calibrated_recoveries for cell in calibrated_cells
+            )
             surrogate_record: dict[str, object] = {
                 "status": "completed",
                 **surrogate_summary.to_dict(),
+                "minimum_resolvable_p": 1.0 / (len(surrogate_trials) + 1.0),
+                "calibrated_recoveries": calibrated_recoveries,
+                "significant_recoveries_0_05": significant_recoveries,
             }
         elif surrogate_policy == "skip-known-transits":
             surrogate_record = {
                 "status": "skipped",
-                "reason": "known transiting system excluded from no-event surrogate sample",
+                "reason": (
+                    "known transiting system excluded from no-event surrogate sample"
+                ),
             }
             (output / "surrogate_skip.json").write_text(
                 json.dumps(surrogate_record, indent=2), encoding="utf-8"
@@ -175,6 +206,8 @@ for row in rows:
                 "physical_trials": len(trials),
                 "physical_recovered": sum(trial.recovered for trial in trials),
                 "surrogate_trials": surrogate_trials_count,
+                "surrogate_calibrated_recoveries": calibrated_recoveries,
+                "surrogate_significant_recoveries_0_05": significant_recoveries,
                 "surrogate_summary": surrogate_record,
             }
         )
@@ -202,11 +235,15 @@ summary = {
         "unmasked circular moving-block bootstrap on targets without a confirmed "
         "transiting system in the pilot; known transit hosts skipped"
     ),
+    "significance_model": (
+        "add-one empirical p-value against each target's full-search surrogate maxima"
+    ),
     "depths": DEPTHS,
     "durations_days": DURATIONS_DAYS,
     "impact_parameters": IMPACT_PARAMETERS,
     "injection_seeds": list(INJECTION_SEEDS),
     "surrogate_seeds": list(SURROGATE_SEEDS),
+    "minimum_resolvable_surrogate_p": 1.0 / (len(SURROGATE_SEEDS) + 1.0),
     "completed_targets": sum(item["status"] == "completed" for item in status),
     "failed_targets": sum(item["status"] == "failed" for item in status),
     "surrogate_null_eligible_targets": sum(
@@ -217,6 +254,16 @@ summary = {
     "total_physical_trials": len(all_trials),
     "total_surrogate_trials": sum(
         int(item.get("surrogate_trials", 0))
+        for item in status
+        if item["status"] == "completed"
+    ),
+    "total_surrogate_calibrated_recoveries": sum(
+        int(item.get("surrogate_calibrated_recoveries", 0))
+        for item in status
+        if item["status"] == "completed"
+    ),
+    "total_surrogate_significant_recoveries_0_05": sum(
+        int(item.get("surrogate_significant_recoveries_0_05", 0))
         for item in status
         if item["status"] == "completed"
     ),
