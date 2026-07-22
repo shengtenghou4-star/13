@@ -175,19 +175,22 @@ def main() -> None:
             sector=sector,
             max_products=args.max_products,
         )
-        null_screen, background, trials, cells = run_real_lightcurve_campaign(
-            lc,
-            depths=args.depths,
-            durations_days=args.durations,
-            seeds=range(args.trials),
-            min_snr=args.min_snr,
-            flatten_window_days=args.flatten_window,
+        null_screen, background, brightening_controls, trials, cells = (
+            run_real_lightcurve_campaign(
+                lc,
+                depths=args.depths,
+                durations_days=args.durations,
+                seeds=range(args.trials),
+                min_snr=args.min_snr,
+                flatten_window_days=args.flatten_window,
+            )
         )
         output = args.output or Path("outputs/real-calibration") / _slug(args.target)
         write_real_campaign_outputs(
             lc,
             null_screen,
             background,
+            brightening_controls,
             trials,
             cells,
             output,
