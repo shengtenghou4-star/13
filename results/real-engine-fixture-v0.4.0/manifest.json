@@ -1,0 +1,40 @@
+{
+  "result_id": "real-engine-fixture-v0.4.0",
+  "status": "targeted code-path validation on synthetic backgrounds; not TESS flight-data evidence",
+  "software_version": "0.4.0",
+  "validated_components": [
+    "mirrored dimming and brightening searches",
+    "direction-specific artifact clipping",
+    "pre-injection brightening control screen",
+    "injection-window exclusion around both event directions",
+    "recovered SNR margin above the strongest same-curve brightening control",
+    "per-target and pooled propagation of the control-adjusted SNR"
+  ],
+  "signed_event_fixture": {
+    "baseline_days": 10.0,
+    "cadences": 1001,
+    "injected_dimming_center_days": 3.0,
+    "recovered_dimming_center_days": 3.0100000000000002,
+    "injected_brightening_center_days": 7.0,
+    "recovered_brightening_center_days": 7.0
+  },
+  "control_margin_fixture": {
+    "baseline_days": 11.979166666666666,
+    "cadence_minutes": 30.0,
+    "background_brightening_events": 1,
+    "background_brightening_maximum_snr": 13.472504485573321,
+    "injected_depth": 0.012,
+    "injected_duration_days": 0.16,
+    "trials": 2,
+    "recovered": 2,
+    "median_recovered_snr": 15.266305294154613,
+    "median_snr_above_control": 1.7938008085812909,
+    "median_timing_error_days": 0.0,
+    "novel_competing_events": 0
+  },
+  "limitations": [
+    "This validates software behavior, not completeness or false-alarm rates on TESS observations.",
+    "Brightenings include astrophysical flares and instrumental events and are not automatically false alarms.",
+    "Two recovery trials are a regression fixture, not a scientific sample size."
+  ]
+}
