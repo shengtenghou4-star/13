@@ -20,7 +20,11 @@ from houearth.surrogate_significance import (
     calibrate_physical_trials,
     summarize_surrogate_calibrated_trials,
 )
-from houearth.surrogates import run_surrogate_null_campaign, write_surrogate_outputs
+from houearth.surrogates import (
+    GAP_AWARE_METHOD,
+    run_surrogate_null_campaign,
+    write_surrogate_outputs,
+)
 
 
 MANIFEST = Path("data/stratified_targets_v0.7.csv")
@@ -178,6 +182,7 @@ for row in rows:
             )
             surrogate_record: dict[str, object] = {
                 "status": "completed",
+                "method": GAP_AWARE_METHOD,
                 **surrogate_summary.to_dict(),
                 "search_durations_days": SEARCH_DURATIONS,
                 "minimum_resolvable_p": 1.0 / (len(surrogate_trials) + 1.0),
@@ -235,8 +240,8 @@ summary = {
     "status": "calibration; not a discovery search or survey completeness claim",
     "injection_model": "quadratic-limb-darkened small-planet approximation",
     "surrogate_model": (
-        "unmasked circular moving-block bootstrap on targets without a confirmed "
-        "transiting system in the pilot; known transit hosts skipped"
+        "gap-aware unmasked circular moving-block bootstrap within contiguous "
+        "observing segments; known transit hosts skipped"
     ),
     "significance_model": (
         "add-one empirical p-value against each target's full-search surrogate maxima"
