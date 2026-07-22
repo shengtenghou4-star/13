@@ -1,0 +1,46 @@
+{
+  "result_id": "real-engine-fixture-v0.3.0",
+  "status": "targeted code-path validation on a synthetic background; not TESS flight-data evidence",
+  "software_version": "0.3.0",
+  "validated_components": [
+    "pre-injection event screen",
+    "coverage-aware injection-window selection",
+    "blind single-event recovery",
+    "timing-error measurement",
+    "Wilson confidence interval",
+    "pooled completeness aggregation",
+    "positive-only artifact clipping that preserves deep negative dips"
+  ],
+  "fixture": {
+    "baseline_days": 12.0,
+    "cadence_minutes": 30.0,
+    "noise_fraction": 0.0018,
+    "sector_label": "99",
+    "injected_depth": 0.012,
+    "injected_duration_days": 0.16,
+    "seeds": [0, 1]
+  },
+  "result": {
+    "background_events": 0,
+    "trials": 2,
+    "recovered": 2,
+    "completeness": 1.0,
+    "wilson_95_low": 0.34238022750665303,
+    "wilson_95_high": 1.0,
+    "median_timing_error_days": 0.010416666666666519,
+    "median_recovered_snr": 15.481188916861967,
+    "novel_competing_events": 0
+  },
+  "clipping_regression": {
+    "input_cadences": 500,
+    "output_cadences": 499,
+    "positive_spike_removed": true,
+    "deep_negative_dip_preserved": true,
+    "minimum_retained_flux": 0.9700025182441996
+  },
+  "limitations": [
+    "This validates software behavior, not completeness on real TESS observations.",
+    "The full repository CI and cloud archive downloads are tracked separately.",
+    "Two trials are a regression fixture, not a scientific sample size."
+  ]
+}
