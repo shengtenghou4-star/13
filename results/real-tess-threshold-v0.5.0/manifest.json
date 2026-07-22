@@ -1,0 +1,43 @@
+{
+  "result_id": "real-tess-threshold-v0.5.0",
+  "status": "real TESS injection/recovery calibration; not a discovery search",
+  "software_version": "0.4.0",
+  "workflow_run_id": 29895570291,
+  "workflow_head_sha": "394f45276b7c036f8830fdaa0a508e258f77a007",
+  "artifact_id": 8519857975,
+  "artifact_name": "real-tess-threshold-batch",
+  "artifact_sha256": "f0031c54a67bbdd720682a5e7f8bd557e23ca36a2d5f3bb6736d1fc614b0167b",
+  "targets_completed": 3,
+  "targets_failed": 0,
+  "planned_trials": 216,
+  "completed_trials": 216,
+  "depths": [0.0005, 0.001, 0.002],
+  "durations_days": [0.04, 0.08, 0.16],
+  "trials_per_target_cell": 8,
+  "all_cells_recovered": true,
+  "novel_competing_events": 0,
+  "weakest_pooled_cell": {
+    "depth": 0.0005,
+    "duration_days": 0.04,
+    "recovered": 24,
+    "trials": 24,
+    "median_recovered_snr": 39.994700980210396,
+    "median_snr_above_control": 12.730810439730828
+  },
+  "weakest_target_cell": {
+    "target": "HD 69830",
+    "depth": 0.0005,
+    "duration_days": 0.04,
+    "recovered": 8,
+    "trials": 8,
+    "median_recovered_snr": 17.726349172925218,
+    "median_snr_above_control": 11.726675078315468
+  },
+  "interpretation": "The 500-2000 ppm grid is still saturated on these bright two-minute TESS products. A deeper threshold experiment at 50-200 ppm is required.",
+  "next_depth_grid": [0.00005, 0.0001, 0.0002],
+  "caveats": [
+    "These three bright stars do not represent the full TESS magnitude and variability distribution.",
+    "Perfect recovery at 500 ppm does not imply Earth-analog sensitivity across the survey.",
+    "Brightening controls are empirical background references, not labels for false alarms."
+  ]
+}
