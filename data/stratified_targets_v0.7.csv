@@ -1,0 +1,7 @@
+target_id,query,author,sectors,max_products,intended_role,notes
+hd-10700,HD 10700,SPOC,,1,bright-low-scatter,"Existing bright-star reference; observed strata are recomputed from downloaded product"
+hd-20794,HD 20794,SPOC,,1,bright-reference,"Existing bright-star reference; not certified signal-free"
+hd-69830,HD 69830,SPOC,,1,bright-harder-background,"Existing target with materially worse 100 ppm recovery"
+au-mic,AU Mic,SPOC,,1,bright-active,"Young active star selected to stress variability handling"
+toi-700,TOI 700,SPOC,,1,mid-magnitude-m-dwarf,"Known transiting system; pre-existing events remain visible and are excluded from injection windows"
+lhs-3844,LHS 3844,SPOC,,1,faint-m-dwarf,"Known transiting system near the 10-12 TESS-magnitude bin; pre-existing events remain visible"
