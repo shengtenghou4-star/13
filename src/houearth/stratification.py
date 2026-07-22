@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, Mapping
 
 import numpy as np
 
@@ -28,6 +28,10 @@ class LightCurveStratum:
     sectors: str
     cameras: str
     ccds: str
+    array_hash_schema: str | None
+    analyzed_combined_sha256: str | None
+    product_provenance_sha256: str | None
+    query_provenance_sha256: str | None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -63,6 +67,19 @@ def _first_numeric(lc: LightCurve, key: str) -> float | None:
 def _joined_unique(values: list[Any]) -> str:
     cleaned = sorted({str(value) for value in values if value is not None and str(value)})
     return ";".join(cleaned) if cleaned else "unknown"
+
+
+def _metadata_string(lc: LightCurve, key: str) -> str | None:
+    value = lc.metadata.get(key)
+    return value if isinstance(value, str) and value else None
+
+
+def _array_hash_value(lc: LightCurve, key: str) -> str | None:
+    hashes = lc.metadata.get("analyzed_array_hashes")
+    if not isinstance(hashes, Mapping):
+        return None
+    value = hashes.get(key)
+    return value if isinstance(value, str) and value else None
 
 
 def _robust_sigma(values: np.ndarray) -> float:
@@ -186,7 +203,7 @@ def lag1_autocorrelation(lc: LightCurve, gap_factor: float = 3.5) -> float:
 
 
 def classify_lightcurve(lc: LightCurve) -> LightCurveStratum:
-    """Assign transparent engineering strata from metadata and observed behavior."""
+    """Assign transparent engineering strata and immutable evidence fingerprints."""
     tmag = _first_numeric(lc, "tessmag")
     crowding = _first_numeric(lc, "crowdsap")
     cadence_minutes = lc.cadence * 24.0 * 60.0
@@ -218,4 +235,8 @@ def classify_lightcurve(lc: LightCurve) -> LightCurveStratum:
         sectors=sector_label,
         cameras=_joined_unique(_product_values(lc, "camera")),
         ccds=_joined_unique(_product_values(lc, "ccd")),
+        array_hash_schema=_array_hash_value(lc, "schema"),
+        analyzed_combined_sha256=_array_hash_value(lc, "combined_sha256"),
+        product_provenance_sha256=_metadata_string(lc, "product_provenance_sha256"),
+        query_provenance_sha256=_metadata_string(lc, "query_provenance_sha256"),
     )
