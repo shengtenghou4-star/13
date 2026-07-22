@@ -27,6 +27,10 @@ on:
       - "src/houearth/stratification.py"
       - "src/houearth/surrogates.py"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   stratified-physical:
     runs-on: ubuntu-latest
