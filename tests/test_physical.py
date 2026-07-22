@@ -1,6 +1,6 @@
 import numpy as np
 
-from houearth.core import LightCurve
+from houearth.core import LightCurve, SingleTransitEvent
 from houearth.evaluation import make_noise_lightcurve
 from houearth.physical import (
     exposure_averaged_single_transit_decrement,
@@ -8,7 +8,8 @@ from houearth.physical import (
     physical_single_transit_decrement,
     radius_ratio_for_midpoint_depth,
 )
-from houearth.physical_evaluation import run_physical_campaign
+from houearth.physical_evaluation import _matched_control, run_physical_campaign
+from houearth.search_grids import physical_single_event_search_durations
 
 
 def test_physical_model_matches_requested_midpoint_depth() -> None:
@@ -85,7 +86,42 @@ def test_physical_injection_returns_radius_ratio() -> None:
     assert 0.9997 < np.min(flux) < 0.9999
 
 
-def test_physical_campaign_recovers_strong_events() -> None:
+def test_brightening_control_matches_winning_filter_duration() -> None:
+    controls = [
+        SingleTransitEvent(
+            target="control",
+            center_time_days=1.0,
+            duration_days=0.052,
+            depth=0.001,
+            snr=6.0,
+            local_points=10,
+            direction="brightening",
+        ),
+        SingleTransitEvent(
+            target="control",
+            center_time_days=2.0,
+            duration_days=0.116,
+            depth=0.001,
+            snr=9.0,
+            local_points=20,
+            direction="brightening",
+        ),
+        SingleTransitEvent(
+            target="control",
+            center_time_days=3.0,
+            duration_days=0.16,
+            depth=0.001,
+            snr=7.0,
+            local_points=30,
+            direction="brightening",
+        ),
+    ]
+    matched_duration, matched_snr = _matched_control(controls, 0.11)
+    assert matched_duration == 0.116
+    assert matched_snr == 9.0
+
+
+def test_physical_campaign_recovers_strong_events_and_freezes_generators() -> None:
     base = make_noise_lightcurve(
         baseline_days=12.0,
         cadence_minutes=30.0,
@@ -102,10 +138,10 @@ def test_physical_campaign_recovers_strong_events() -> None:
     )
     _, _, _, trials, cells = run_physical_campaign(
         lc,
-        depths=(0.012,),
-        durations_days=(0.16,),
-        impact_parameters=(0.0, 0.6),
-        seeds=range(2),
+        depths=(value for value in (0.012,)),
+        durations_days=(value for value in (0.16,)),
+        impact_parameters=(value for value in (0.0, 0.6)),
+        seeds=(value for value in range(2)),
         supersample=7,
     )
     assert len(trials) == 4
@@ -114,3 +150,9 @@ def test_physical_campaign_recovers_strong_events() -> None:
     assert all(trial.radius_ratio > 0 for trial in trials)
     assert all(trial.supersample == 7 for trial in trials)
     assert all(abs(trial.exposure_days - lc.cadence) < 1e-12 for trial in trials)
+    search_family = physical_single_event_search_durations((0.16,))
+    assert all(
+        trial.recovered_duration_days in search_family
+        for trial in trials
+        if trial.recovered
+    )
