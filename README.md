@@ -10,7 +10,7 @@ HOU-EARTH is a reproducible research system for:
 4. ranking candidates with transparent diagnostics rather than a black-box probability alone;
 5. exporting machine-readable candidate records and human-readable reports.
 
-> Current status: **Phase 0.2 — measured calibration engine**. The code is research scaffolding, not a claim of a new planet.
+> Current status: **Phase 0.3 — real-flight-data calibration engine**. The code is research scaffolding, not a claim of a new planet.
 
 ## Why this project exists
 
@@ -40,7 +40,7 @@ python -m pip install -e '.[tess]'
 houearth tess "TOI 700" --min-period 1 --max-period 100 --output outputs/toi-700
 ```
 
-The real-data command uses Lightkurve to query public products at MAST. It prefers SPOC products by default and can combine observations from multiple sectors.
+The real-data command uses Lightkurve to query public products at MAST. It prefers SPOC products by default and can combine observations from multiple sectors. Product-level provenance is retained when available, including sector, TIC, camera, CCD, TESS magnitude, crowding metrics, and archive filename.
 
 ## Python API
 
@@ -70,11 +70,12 @@ A dip is not a planet. HOU-EARTH records evidence and failure modes explicitly. 
 
 ```text
 src/houearth/       core library and CLI
-examples/           runnable examples
-tests/              injection-recovery tests
-results/            frozen, versioned calibration evidence
-docs/ROADMAP.md     research phases and evidence gates
-.github/workflows/  continuous integration
+data/                frozen target manifests
+examples/            runnable experiments
+tests/               injection-recovery and safeguard tests
+results/             frozen, versioned calibration evidence
+docs/ROADMAP.md      research phases and evidence gates
+.github/workflows/   continuous integration and cloud experiments
 ```
 
 ## Near-term success criteria
@@ -84,9 +85,9 @@ docs/ROADMAP.md     research phases and evidence gates
 - Reproduce at least three published TESS planets from public light curves.
 - Produce a frozen, auditable candidate table before any novelty claim.
 
-## Phase 0.2: measured detection limits
+## Phase 0.2: measured synthetic limits
 
-HOU-EARTH now includes a deterministic single-transit injection/recovery campaign rather than relying on one successful demo:
+HOU-EARTH includes a deterministic single-transit injection/recovery campaign rather than relying on one successful demo:
 
 ```bash
 houearth calibrate-single
@@ -94,7 +95,28 @@ houearth calibrate-single
 
 The first frozen calibration (`results/single-transit-v0.2.0/`) uses 96 trials over a depth-duration grid. Under its stated synthetic noise model, 0.4% events lasting 0.16 days were recovered in 6/8 trials, while every tested 0.8% event was recovered. These are software calibration results, not claims about completeness on real TESS flight data.
 
-Known-planet benchmarks are versioned in code:
+## Phase 0.3: injection into real TESS observations
+
+The real-data engine retains the observed timestamps, gaps, uncertainties, stellar variability, and spacecraft systematics, then injects blind single events only into sufficiently sampled windows that do not overlap pre-existing detections:
+
+```bash
+houearth calibrate-real "HD 10700" --max-products 1
+```
+
+For every target it exports:
+
+- archive and product provenance;
+- the pre-injection event screen;
+- every injection seed, center, depth, duration, and recovery decision;
+- timing error and recovered SNR;
+- novel competing detections separated from pre-existing events;
+- 95% Wilson intervals for each completeness estimate.
+
+The search preprocessing removes strong positive artifacts while preserving deep negative transit-like signals, including dips that would be many standard deviations deep on a very bright star.
+
+The first cloud batch is defined by `data/real_calibration_targets.csv`. It runs 48 blind injections across three independently downloaded TESS background curves. These targets are screening backgrounds, not certified signal-free stars; all pre-injection events remain visible in the evidence package.
+
+## Known-planet benchmarks
 
 ```bash
 houearth benchmark lhs3844b
