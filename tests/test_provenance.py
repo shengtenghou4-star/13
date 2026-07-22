@@ -63,7 +63,7 @@ def test_lightcurve_hashes_record_components_and_missing_uncertainty() -> None:
     assert with_err["combined_sha256"] != without_err["combined_sha256"]
 
 
-def test_fingerprint_commits_to_constructed_analyzed_arrays() -> None:
+def test_fingerprint_commits_to_constructed_campaign_input_arrays() -> None:
     time = np.arange(24.0)[::-1]
     flux = 1.0 + 0.0001 * np.arange(24.0)
     err = np.full(24, 0.001)
@@ -79,7 +79,7 @@ def test_fingerprint_commits_to_constructed_analyzed_arrays() -> None:
         metadata={"source": "fixture"},
     )
     expected = lightcurve_array_hashes(lc.time, lc.flux, lc.flux_err)
-    stored = lc.metadata["analyzed_array_hashes"]
+    stored = lc.metadata["campaign_input_array_hashes"]
 
     assert len(lc.time) == 22
     assert np.all(np.diff(lc.time) > 0)
