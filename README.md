@@ -1,20 +1,23 @@
 # HOU-EARTH / 侯星计划
 
-**An open AI observatory for finding overlooked transiting worlds in NASA TESS data.**
+**An open, auditable observatory for overlooked transiting worlds in NASA TESS data.**
 
 HOU-EARTH is a reproducible research system for:
 
-1. downloading and stitching public TESS light curves;
-2. recovering known periodic transits as a calibration baseline;
-3. detecting isolated and sparse transit-like events that ordinary periodic searches can miss;
-4. ranking candidates with transparent diagnostics rather than a black-box probability alone;
-5. exporting machine-readable candidate records and human-readable reports.
+1. downloading and preserving provenance for public TESS light curves;
+2. recovering known periodic transits as calibration baselines;
+3. detecting isolated and sparse transit-like events that periodic searches can miss;
+4. measuring injection/recovery completeness on genuine flight-data backgrounds;
+5. calibrating raw detections against same-light-curve and red-noise controls;
+6. exporting machine-readable evidence and human-readable reports.
 
-> Current status: **Phase 0.4 — symmetric real-flight-data calibration engine**. The code is research scaffolding, not a claim of a new planet.
+> **Current status:** the frozen v0.6 evidence contains 696 blind injections into genuine TESS light curves and a first 50–200 ppm sensitivity boundary. Phase 0.7 is an open validation PR that adds stratified targets, exposure-averaged physical transit shapes, moving-block null curves, and empirical familywise p-values. Its six-target flight-data campaign has **not yet completed** and is not presented as a result.
 
 ## Why this project exists
 
-Most transit pipelines are strongest when a signal repeats several times. HOU-EARTH is designed to preserve that reliable baseline while extending the search toward long-period, single-transit, and sparse-transit candidates across multiple TESS sectors.
+Most transit pipelines are strongest when a signal repeats several times. HOU-EARTH preserves that reliable baseline while extending the search toward long-period, single-transit, and sparse-transit candidates across TESS sectors.
+
+The project treats a detected dip as an event, not a planet. Its purpose is to make sensitivity, background extremes, provenance, and failure modes auditable before any novelty claim.
 
 ## Quick start
 
@@ -23,13 +26,13 @@ python -m pip install -e .
 houearth synthetic --output outputs/synthetic-demo
 ```
 
-The command creates a synthetic TESS-like light curve, injects a planet transit, runs both the periodic and single-event search, and writes:
+The synthetic command writes:
 
 - `lightcurve.csv`
 - `periodic_candidate.json`
 - `single_events.json`
 - `report.html`
-- `diagnostic.png` (when matplotlib is available)
+- `diagnostic.png` when matplotlib is installed
 
 ## Run on real TESS data
 
@@ -40,7 +43,7 @@ python -m pip install -e '.[tess]'
 houearth tess "TOI 700" --min-period 1 --max-period 100 --output outputs/toi-700
 ```
 
-The real-data command uses Lightkurve to query public products at MAST. It prefers SPOC products by default and can combine observations from multiple sectors. Product-level provenance is retained when available, including sector, TIC, camera, CCD, TESS magnitude, crowding metrics, and archive filename.
+The real-data path uses Lightkurve to query public MAST products. It prefers SPOC by default and retains product-level provenance when available, including sector, TIC, camera, CCD, TESS magnitude, crowding metrics, exposure, and archive filename.
 
 ## Python API
 
@@ -58,7 +61,7 @@ print(events[:3])
 
 ## Scientific guardrails
 
-A dip is not a planet. HOU-EARTH records evidence and failure modes explicitly. Candidate promotion will require, at minimum:
+A dip is not a planet. Candidate promotion requires, at minimum:
 
 - repeatability or a constrained future transit window;
 - odd/even and secondary-eclipse checks;
@@ -69,63 +72,74 @@ A dip is not a planet. HOU-EARTH records evidence and failure modes explicitly. 
 ## Repository map
 
 ```text
-src/houearth/       core library and CLI
-data/                frozen target manifests
-examples/            runnable experiments
-tests/               injection-recovery and safeguard tests
-results/             frozen, versioned calibration evidence
-docs/ROADMAP.md      research phases and evidence gates
-.github/workflows/   continuous integration and cloud experiments
+src/houearth/       core library, calibration, statistics, and CLI
+data/               frozen target manifests and target-eligibility audits
+examples/           runnable experiments and evidence validators
+tests/              injection/recovery, statistics, and protocol safeguards
+results/             frozen, versioned evidence
+.github/workflows/   CI and cloud experiments
+docs/                protocols, reports, and roadmap
 ```
 
-## Near-term success criteria
+## Completed calibration evidence
 
-- Recover injected periodic signals with <2% period error in controlled tests.
-- Recover isolated injected transit events within one cadence-scale tolerance.
-- Reproduce at least three published TESS planets from public light curves.
-- Produce a frozen, auditable candidate table before any novelty claim.
+### Phase 0.2 — controlled synthetic limits
 
-## Phase 0.2: measured synthetic limits
+`results/single-transit-v0.2.0/` contains 96 deterministic injection/recovery trials over a depth-duration grid. These results validate software behavior under the stated synthetic noise model; they do not estimate TESS survey completeness.
 
-HOU-EARTH includes a deterministic single-transit injection/recovery campaign rather than relying on one successful demo:
+### Phase 0.3–0.4 — real backgrounds and symmetric controls
 
-```bash
-houearth calibrate-single
-```
+The real-data engine retains observed timestamps, gaps, uncertainties, stellar variability, and spacecraft systematics. Blind events are injected only into adequately sampled windows that avoid pre-existing dimming and brightening detections.
 
-The first frozen calibration (`results/single-transit-v0.2.0/`) uses 96 trials over a depth-duration grid. Under its stated synthetic noise model, 0.4% events lasting 0.16 days were recovered in 6/8 trials, while every tested 0.8% event was recovered. These are software calibration results, not claims about completeness on real TESS flight data.
+Every real-data screen runs matched searches for:
 
-## Phase 0.3: injection into real TESS observations
+- downward transit-like dimmings;
+- upward brightenings with mirrored preprocessing.
 
-The real-data engine retains the observed timestamps, gaps, uncertainties, stellar variability, and spacecraft systematics, then injects blind single events only into sufficiently sampled windows that do not overlap pre-existing detections:
+Brightenings are an empirical control population, not automatically false alarms. Deep negative events are preserved during clipping instead of being silently deleted as outliers.
 
-```bash
-houearth calibrate-real "HD 10700" --max-products 1
-```
+### Phase 0.4–0.6 — 696 real TESS injection trials
 
-For every target it exports:
+Three reproducible campaigns used two-minute TESS products for HD 10700, HD 20794, and HD 69830:
 
-- archive and product provenance;
-- the pre-injection event screen;
-- every injection seed, center, depth, duration, and recovery decision;
-- timing error and recovered SNR;
-- novel competing detections separated from pre-existing events;
-- 95% Wilson intervals for each completeness estimate.
+- 48 trials at 4,000–8,000 ppm;
+- 216 trials at 500–2,000 ppm;
+- 432 trials at 50–200 ppm.
 
-The search preprocessing removes strong positive artifacts while preserving deep negative transit-like signals, including dips that would be many standard deviations deep on a very bright star.
+The pooled 50–200 ppm grid measured the first duration-dependent boundary:
 
-The first cloud batch is defined by `data/real_calibration_targets.csv`. It runs 48 blind injections across three independently downloaded TESS background curves. These targets are screening backgrounds, not certified signal-free stars; all pre-injection events remain visible in the evidence package.
+| Depth | 0.96 h | 1.92 h | 3.84 h |
+|---:|---:|---:|---:|
+| 50 ppm | 16.7% | 37.5% | 68.8% |
+| 100 ppm | 70.8% | 85.4% | 95.8% |
+| 200 ppm | 97.9% | 100% | 100% |
 
-## Phase 0.4: same-light-curve brightening controls
+This is a three-target calibration result, not a survey-wide TESS completeness claim. See `docs/REAL_TESS_SENSITIVITY_REPORT_2026-07-22.md` and the frozen `results/real-tess-*` directories.
 
-Every real-data screen now runs two matched searches:
+## Phase 0.7 — stratified physical-transit pilot
 
-- a downward-event search for transit-like dimmings;
-- an upward-event search for brightenings using the same duration grid, detrending, threshold, and mirrored artifact clipping.
+The development protocol is frozen in `docs/PHASE0_7_STRATIFIED_PHYSICAL_PROTOCOL.md` before inspecting flight-data outcomes.
 
-The brightening population is an empirical control for flares and instrumental excursions in that exact light curve. Each target records the dimming-to-brightening event ratio, the difference between their maximum SNR values, and each recovered injection's SNR margin above the strongest brightening control. A brightening is not automatically a false alarm; this control is a conservative background reference, not a substitute for astrophysical vetting.
+The planned pilot contains:
 
-The v0.4 regression suite verifies that a single curve can independently recover a known dip and a known brightening, while the real-injection path carries the control-adjusted SNR through per-target and pooled reports.
+- six TESS targets spanning bright references, an active star, and M-dwarf backgrounds;
+- 192 physical injections at 100 and 200 ppm;
+- exact circle-overlap geometry with quadratic limb darkening under a documented small-planet approximation;
+- finite-exposure integration with seven sub-exposure samples and exposure provenance;
+- separate whole-curve variability, point-to-point noise, six-hour scatter, and lag-1 correlation strata;
+- 192 unmasked moving-block null curves across three targets without a confirmed transiting system in the pilot qualification;
+- known transit hosts retained for physical injections but excluded from no-event null inference;
+- add-one empirical p-values against per-target full-search surrogate maxima;
+- an independent evidence validator that separates raw recovery from empirically significant recovery.
+
+With 64 null curves per eligible target, the minimum resolvable empirical probability is `1/65 ≈ 0.0154`. The pilot can support a 5% screen, not a 1% claim.
+
+Targeted deterministic validation is frozen in:
+
+- `results/real-engine-fixture-v0.7.0/surrogate-validation.json`
+- `results/real-engine-fixture-v0.7.0/physical-exposure-validation.json`
+
+Those fixtures are synthetic or deterministic engineering evidence. They are not substitutes for the pending six-target TESS execution.
 
 ## Known-planet benchmarks
 
@@ -135,7 +149,7 @@ houearth benchmark pimenc
 houearth benchmark toi700d
 ```
 
-The fast GitHub Actions matrix covers LHS 3844 b and pi Mensae c. The heavier TOI-700 d multi-sector benchmark is manual so ordinary commits do not repeatedly download eleven sectors.
+The fast Actions matrix covers LHS 3844 b and π Mensae c. The heavier TOI-700 d multi-sector benchmark is manual so ordinary commits do not repeatedly download many sectors.
 
 ## License
 
