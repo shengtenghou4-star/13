@@ -10,7 +10,7 @@ HOU-EARTH is a reproducible research system for:
 4. ranking candidates with transparent diagnostics rather than a black-box probability alone;
 5. exporting machine-readable candidate records and human-readable reports.
 
-> Current status: **Phase 0.3 — real-flight-data calibration engine**. The code is research scaffolding, not a claim of a new planet.
+> Current status: **Phase 0.4 — symmetric real-flight-data calibration engine**. The code is research scaffolding, not a claim of a new planet.
 
 ## Why this project exists
 
@@ -115,6 +115,17 @@ For every target it exports:
 The search preprocessing removes strong positive artifacts while preserving deep negative transit-like signals, including dips that would be many standard deviations deep on a very bright star.
 
 The first cloud batch is defined by `data/real_calibration_targets.csv`. It runs 48 blind injections across three independently downloaded TESS background curves. These targets are screening backgrounds, not certified signal-free stars; all pre-injection events remain visible in the evidence package.
+
+## Phase 0.4: same-light-curve brightening controls
+
+Every real-data screen now runs two matched searches:
+
+- a downward-event search for transit-like dimmings;
+- an upward-event search for brightenings using the same duration grid, detrending, threshold, and mirrored artifact clipping.
+
+The brightening population is an empirical control for flares and instrumental excursions in that exact light curve. Each target records the dimming-to-brightening event ratio, the difference between their maximum SNR values, and each recovered injection's SNR margin above the strongest brightening control. A brightening is not automatically a false alarm; this control is a conservative background reference, not a substitute for astrophysical vetting.
+
+The v0.4 regression suite verifies that a single curve can independently recover a known dip and a known brightening, while the real-injection path carries the control-adjusted SNR through per-target and pooled reports.
 
 ## Known-planet benchmarks
 
