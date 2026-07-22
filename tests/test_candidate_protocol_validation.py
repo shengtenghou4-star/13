@@ -74,6 +74,15 @@ def rehash(payload: dict[str, object]) -> None:
     )
 
 
+def validate_rehashed_tampering(
+    payload: dict[str, object],
+) -> CandidateProtocolValidationError:
+    rehash(payload)
+    with pytest.raises(CandidateProtocolValidationError) as captured:
+        validate_frozen_candidate_table(payload)
+    return captured.value
+
+
 def test_valid_frozen_candidate_table_is_accepted() -> None:
     report = validate_frozen_candidate_table(valid_payload())
     assert report.accepted is True
@@ -85,20 +94,16 @@ def test_valid_frozen_candidate_table_is_accepted() -> None:
 def test_rehashed_manual_review_tampering_is_rejected() -> None:
     payload = deepcopy(valid_payload())
     payload["candidates"][0]["manual_review_status"] = "opened"
-    rehash(payload)
-    with pytest.raises(CandidateProtocolValidationError) as captured:
-        validate_frozen_candidate_table(payload)
-    assert any("not frozen before manual review" in error for error in captured.value.report.errors)
+    error = validate_rehashed_tampering(payload)
+    assert any("not frozen before manual review" in item for item in error.report.errors)
 
 
 def test_rehashed_q_value_tampering_is_rejected() -> None:
     payload = deepcopy(valid_payload())
     payload["candidates"][0]["benjamini_hochberg_q"] = 0.000001
     payload["candidates"][0]["exclusion_reasons"] = []
-    rehash(payload)
-    with pytest.raises(CandidateProtocolValidationError) as captured:
-        validate_frozen_candidate_table(payload)
-    assert any("BH q-value is inconsistent" in error for error in captured.value.report.errors)
+    error = validate_rehashed_tampering(payload)
+    assert any("BH q-value is inconsistent" in item for item in error.report.errors)
 
 
 def test_rehashed_ranking_manipulation_is_rejected() -> None:
@@ -106,19 +111,15 @@ def test_rehashed_ranking_manipulation_is_rejected() -> None:
     payload["candidates"] = list(reversed(payload["candidates"]))
     payload["candidates"][0]["blind_priority_rank"] = 1
     payload["candidates"][1]["blind_priority_rank"] = 2
-    rehash(payload)
-    with pytest.raises(CandidateProtocolValidationError) as captured:
-        validate_frozen_candidate_table(payload)
-    assert any("not in the frozen blind ranking order" in error for error in captured.value.report.errors)
+    error = validate_rehashed_tampering(payload)
+    assert any("not in the frozen blind ranking order" in item for item in error.report.errors)
 
 
 def test_rehashed_candidate_id_forgery_is_rejected() -> None:
     payload = deepcopy(valid_payload())
     payload["candidates"][0]["candidate_id"] = "hou-" + "f" * 24
-    rehash(payload)
-    with pytest.raises(CandidateProtocolValidationError) as captured:
-        validate_frozen_candidate_table(payload)
-    assert any("does not match frozen evidence" in error for error in captured.value.report.errors)
+    error = validate_rehashed_tampering(payload)
+    assert any("does not match frozen evidence" in item for item in error.report.errors)
 
 
 def test_plain_payload_tampering_breaks_table_hash() -> None:
@@ -126,4 +127,69 @@ def test_plain_payload_tampering_breaks_table_hash() -> None:
     payload["candidates"][0]["snr"] = 999.0
     with pytest.raises(CandidateProtocolValidationError) as captured:
         validate_frozen_candidate_table(payload)
-    assert any("table_sha256 does not match" in error for error in captured.value.report.errors)
+    assert any("table_sha256 does not match" in item for item in captured.value.report.errors)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("frozen_at_utc", "banana", "not canonical UTC"),
+        ("target_familywise_alpha", 0.04, "not frozen at 0.05"),
+        ("table_fdr_alpha", 0.20, "not frozen at 0.10"),
+        ("selection_rule", "choose what looks nice", "selection_rule"),
+        ("ranking_rule", "manual priority", "ranking_rule"),
+    ],
+)
+def test_rehashed_protocol_metadata_tampering_is_rejected(
+    field: str,
+    value: object,
+    message: str,
+) -> None:
+    payload = deepcopy(valid_payload())
+    payload[field] = value
+    error = validate_rehashed_tampering(payload)
+    assert any(message in item for item in error.report.errors)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("target_name", "", "target_name is invalid"),
+        ("center_time_days", "1.0", "center time is invalid"),
+        ("duration_days", -0.08, "duration is invalid"),
+        ("depth", -0.0001, "depth is invalid"),
+        ("snr", True, "SNR is invalid"),
+    ],
+)
+def test_rehashed_scientific_field_tampering_is_rejected(
+    field: str,
+    value: object,
+    message: str,
+) -> None:
+    payload = deepcopy(valid_payload())
+    payload["candidates"][0][field] = value
+    error = validate_rehashed_tampering(payload)
+    assert any(message in item for item in error.report.errors)
+
+
+def test_rehashed_matched_control_arithmetic_tampering_is_rejected() -> None:
+    payload = deepcopy(valid_payload())
+    payload["candidates"][0]["snr_above_matched_control"] = 999.0
+    error = validate_rehashed_tampering(payload)
+    assert any("matched-control arithmetic" in item for item in error.report.errors)
+
+
+def test_rehashed_duration_outside_search_family_is_rejected() -> None:
+    payload = deepcopy(valid_payload())
+    payload["candidates"][0]["duration_days"] = 0.09
+    error = validate_rehashed_tampering(payload)
+    assert any("outside the search family" in item for item in error.report.errors)
+
+
+def test_rehashed_campaign_hash_reuse_across_targets_is_rejected() -> None:
+    payload = deepcopy(valid_payload())
+    payload["candidates"][1]["campaign_input_combined_sha256"] = payload[
+        "candidates"
+    ][0]["campaign_input_combined_sha256"]
+    error = validate_rehashed_tampering(payload)
+    assert any("belongs to multiple targets" in item for item in error.report.errors)
