@@ -9,6 +9,8 @@ on:
       - "data/null_target_audit_v0.7.csv"
       - "examples/run_stratified_physical_batch.py"
       - "examples/validate_stratified_outputs.py"
+      - "examples/validate_gap_aware_outputs.py"
+      - "src/houearth/gap_protocol_validation.py"
       - "src/houearth/io.py"
       - "src/houearth/physical.py"
       - "src/houearth/physical_evaluation.py"
@@ -20,6 +22,8 @@ on:
       - "src/houearth/stratification.py"
       - "src/houearth/surrogate_significance.py"
       - "src/houearth/surrogates.py"
+      - "tests/test_gap_aware_surrogates.py"
+      - "tests/test_gap_protocol_validation.py"
       - "tests/test_physical.py"
       - "tests/test_protocol_validation.py"
       - "tests/test_protocol_validation_counts.py"
@@ -38,15 +42,30 @@ on:
       - "data/null_target_audit_v0.7.csv"
       - "examples/run_stratified_physical_batch.py"
       - "examples/validate_stratified_outputs.py"
+      - "examples/validate_gap_aware_outputs.py"
+      - "src/houearth/gap_protocol_validation.py"
       - "src/houearth/io.py"
       - "src/houearth/physical.py"
       - "src/houearth/physical_evaluation.py"
       - "src/houearth/protocol_validation.py"
       - "src/houearth/provenance.py"
+      - "src/houearth/real_evaluation.py"
+      - "src/houearth/search.py"
       - "src/houearth/search_grids.py"
       - "src/houearth/stratification.py"
       - "src/houearth/surrogate_significance.py"
       - "src/houearth/surrogates.py"
+      - "tests/test_gap_aware_surrogates.py"
+      - "tests/test_gap_protocol_validation.py"
+      - "tests/test_physical.py"
+      - "tests/test_protocol_validation.py"
+      - "tests/test_protocol_validation_counts.py"
+      - "tests/test_provenance.py"
+      - "tests/test_search_grids.py"
+      - "tests/test_stratification.py"
+      - "tests/test_stratified_protocol.py"
+      - "tests/test_surrogate_significance.py"
+      - "tests/test_surrogates.py"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -64,9 +83,14 @@ jobs:
           cache: "pip"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[tess,dev]'
-      - run: pytest -q
-      - run: python examples/run_stratified_physical_batch.py
-      - run: python examples/validate_stratified_outputs.py outputs/stratified-physical-v0.7
+      - name: Run full test suite
+        run: pytest -q
+      - name: Run six-target physical and null campaign
+        run: python examples/run_stratified_physical_batch.py
+      - name: Validate main Phase 0.7 evidence protocol
+        run: python examples/validate_stratified_outputs.py outputs/stratified-physical-v0.7
+      - name: Validate gap-aware surrogate protocol
+        run: python examples/validate_gap_aware_outputs.py outputs/stratified-physical-v0.7
       - uses: actions/upload-artifact@v4
         if: always()
         with:
