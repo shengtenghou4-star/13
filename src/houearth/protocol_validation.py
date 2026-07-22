@@ -158,10 +158,10 @@ def validate_phase07_summary(
         stratum = _mapping(stratum_value)
         if not isinstance(stratum_value, Mapping):
             errors.append(f"{target_id}: stratum is missing or malformed")
-        if stratum.get("array_hash_schema") != HASH_SCHEMA:
-            errors.append(f"{target_id}: analyzed-array hash schema is inconsistent")
+        if stratum.get("campaign_input_hash_schema") != HASH_SCHEMA:
+            errors.append(f"{target_id}: campaign-input hash schema is inconsistent")
         for field in (
-            "analyzed_combined_sha256",
+            "campaign_input_combined_sha256",
             "product_provenance_sha256",
             "query_provenance_sha256",
         ):
