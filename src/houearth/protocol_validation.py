@@ -4,6 +4,8 @@ import math
 from dataclasses import asdict, dataclass
 from typing import Mapping, Sequence
 
+from .search_grids import physical_single_event_search_durations
+
 
 @dataclass(frozen=True)
 class ProtocolValidationReport:
@@ -44,6 +46,30 @@ def _safe_float(value: object) -> float | None:
     return parsed if math.isfinite(parsed) else None
 
 
+def _float_tuple(value: object) -> tuple[float, ...] | None:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return None
+    parsed: list[float] = []
+    for item in value:
+        number = _safe_float(item)
+        if number is None:
+            return None
+        parsed.append(number)
+    return tuple(parsed)
+
+
+def _same_float_tuple(
+    observed: tuple[float, ...] | None,
+    expected: tuple[float, ...],
+) -> bool:
+    if observed is None or len(observed) != len(expected):
+        return False
+    return all(
+        math.isclose(left, right, rel_tol=1e-12, abs_tol=1e-12)
+        for left, right in zip(observed, expected)
+    )
+
+
 def validate_phase07_summary(
     summary: Mapping[str, object],
     *,
@@ -51,8 +77,12 @@ def validate_phase07_summary(
     minimum_completed_null_targets: int = 2,
     physical_trials_per_target: int = 32,
     surrogate_trials_per_null_target: int = 64,
+    physical_durations_days: tuple[float, ...] = (0.08, 0.16),
 ) -> ProtocolValidationReport:
     """Validate a Phase 0.7 evidence summary without discarding partial results."""
+    expected_search_durations = physical_single_event_search_durations(
+        physical_durations_days
+    )
     targets_value = summary.get("targets", [])
     malformed_targets = False
     if isinstance(targets_value, Sequence) and not isinstance(
@@ -82,6 +112,9 @@ def validate_phase07_summary(
 
     if malformed_targets:
         errors.append("targets contains malformed non-object entries")
+    root_search_durations = _float_tuple(summary.get("search_durations_days"))
+    if not _same_float_tuple(root_search_durations, expected_search_durations):
+        errors.append("root search-duration family is missing or inconsistent")
     if len(completed) < minimum_completed_targets:
         errors.append(
             f"completed targets {len(completed)} < required {minimum_completed_targets}"
@@ -115,6 +148,15 @@ def validate_phase07_summary(
                 errors.append(
                     f"{target_id}: surrogate trials {surrogate_count} "
                     f"!= {surrogate_trials_per_null_target}"
+                )
+            target_search_durations = _float_tuple(
+                surrogate_summary.get("search_durations_days")
+            )
+            if not _same_float_tuple(
+                target_search_durations, expected_search_durations
+            ):
+                errors.append(
+                    f"{target_id}: surrogate search-duration family is inconsistent"
                 )
         elif policy == "skip-known-transits":
             if surrogate_count != 0:
