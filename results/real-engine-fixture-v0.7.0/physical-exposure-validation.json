@@ -1,0 +1,57 @@
+{
+  "project": "HOU-EARTH",
+  "version": "0.7.0-development",
+  "date": "2026-07-22",
+  "status": "targeted deterministic validation; not TESS flight-data evidence",
+  "model": {
+    "geometry": "exact circle overlap with quadratic limb darkening under a small-planet local-intensity approximation",
+    "depth_definition": "intrinsic instantaneous midpoint decrement",
+    "observation_model": "finite-exposure midpoint supersampling",
+    "default_supersample": 7,
+    "pilot_exposure_source": "median observed cadence"
+  },
+  "combined_critical_path_tests": {
+    "passed": 15,
+    "failed": 0,
+    "elapsed_seconds": 0.21,
+    "coverage": [
+      "physical midpoint-depth inversion",
+      "finite-exposure contact smoothing",
+      "physical campaign recovery and provenance",
+      "moving-block surrogate controls",
+      "empirical familywise p-values",
+      "scale-separated target strata",
+      "frozen six-target protocol"
+    ]
+  },
+  "two_minute_exposure_results": {
+    "100_ppm": {
+      "apparent_midpoint_retained_fraction_minimum": 0.9999797718792695,
+      "maximum_contact_shape_difference_ppm_range": [3.100782417816179, 11.607595743355695]
+    },
+    "200_ppm": {
+      "apparent_midpoint_retained_fraction_minimum": 0.9999795259110472,
+      "maximum_contact_shape_difference_ppm_range": [4.148616502401289, 17.339322626394573]
+    }
+  },
+  "thirty_minute_exposure_stress_test": {
+    "100_ppm": {
+      "apparent_midpoint_retained_fraction_minimum": 0.9953569080123228,
+      "maximum_contact_shape_difference_ppm_range": [28.744497998434458, 35.246853231488146]
+    },
+    "200_ppm": {
+      "apparent_midpoint_retained_fraction_minimum": 0.9952992903002199,
+      "maximum_contact_shape_difference_ppm_range": [54.113056687454225, 69.09217653134327]
+    }
+  },
+  "equivalent_width_check": {
+    "minimum_retained_ratio": 0.9999999056006781,
+    "maximum_retained_ratio": 1.0000000745656987,
+    "interpretation": "Finite-exposure integration smooths contact morphology without materially creating or removing integrated transit signal."
+  },
+  "interpretation": [
+    "For two-minute cadence the intrinsic midpoint depth is almost unchanged, but ingress and egress can differ by a non-negligible fraction of a 100-200 ppm signal.",
+    "The correction becomes essential for longer cadences and is retained in every physical trial through exposure_days and supersample provenance fields.",
+    "The benchmark validates model behavior only; scientific completeness still requires the queued six-target TESS campaign."
+  ]
+}
