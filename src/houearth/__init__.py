@@ -12,6 +12,11 @@ from .physical_evaluation import (
     PhysicalInjectionTrial,
     run_physical_campaign,
 )
+from .protocol_validation import (
+    ProtocolValidationError,
+    ProtocolValidationReport,
+    validate_phase07_summary,
+)
 from .real_evaluation import (
     NullScreenResult,
     RealCompletenessCell,
@@ -38,6 +43,8 @@ __all__ = [
     "PeriodicCandidate",
     "PhysicalCompletenessCell",
     "PhysicalInjectionTrial",
+    "ProtocolValidationError",
+    "ProtocolValidationReport",
     "RealCompletenessCell",
     "RealInjectionTrial",
     "SingleTransitEvent",
@@ -58,6 +65,7 @@ __all__ = [
     "search_periodic_transits",
     "search_single_transits",
     "summarize_surrogate_calibrated_trials",
+    "validate_phase07_summary",
     "wilson_interval",
 ]
 
