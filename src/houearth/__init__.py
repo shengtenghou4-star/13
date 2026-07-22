@@ -25,6 +25,7 @@ from .real_evaluation import (
     wilson_interval,
 )
 from .search import search_periodic_transits, search_single_transits
+from .search_grids import physical_single_event_search_durations
 from .stratification import LightCurveStratum, classify_lightcurve
 from .surrogate_significance import (
     SurrogateCalibratedCell,
@@ -58,6 +59,7 @@ __all__ = [
     "empirical_familywise_p",
     "exposure_averaged_single_transit_decrement",
     "inject_physical_single_transit",
+    "physical_single_event_search_durations",
     "physical_single_transit_decrement",
     "run_physical_campaign",
     "run_real_lightcurve_campaign",
