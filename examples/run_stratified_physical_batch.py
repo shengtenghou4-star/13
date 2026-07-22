@@ -14,6 +14,7 @@ from houearth.physical_evaluation import (
     write_physical_outputs,
 )
 from houearth.real_evaluation import wilson_interval
+from houearth.search_grids import physical_single_event_search_durations
 from houearth.stratification import LightCurveStratum, classify_lightcurve
 from houearth.surrogate_significance import (
     calibrate_physical_trials,
@@ -26,6 +27,7 @@ MANIFEST = Path("data/stratified_targets_v0.7.csv")
 OUTPUT_ROOT = Path("outputs/stratified-physical-v0.7")
 DEPTHS = (0.0001, 0.0002)
 DURATIONS_DAYS = (0.08, 0.16)
+SEARCH_DURATIONS = physical_single_event_search_durations(DURATIONS_DAYS)
 IMPACT_PARAMETERS = (0.0, 0.6)
 INJECTION_SEEDS = range(4)
 SURROGATE_SEEDS = range(64)
@@ -150,7 +152,7 @@ for row in rows:
                 lc,
                 seeds=SURROGATE_SEEDS,
                 block_days=0.5,
-                durations=(0.04, 0.08, 0.16),
+                durations=SEARCH_DURATIONS,
             )
             write_surrogate_outputs(surrogate_trials, surrogate_summary, output)
             surrogate_trials_count = len(surrogate_trials)
@@ -177,6 +179,7 @@ for row in rows:
             surrogate_record: dict[str, object] = {
                 "status": "completed",
                 **surrogate_summary.to_dict(),
+                "search_durations_days": SEARCH_DURATIONS,
                 "minimum_resolvable_p": 1.0 / (len(surrogate_trials) + 1.0),
                 "calibrated_recoveries": calibrated_recoveries,
                 "significant_recoveries_0_05": significant_recoveries,
@@ -240,6 +243,7 @@ summary = {
     ),
     "depths": DEPTHS,
     "durations_days": DURATIONS_DAYS,
+    "search_durations_days": SEARCH_DURATIONS,
     "impact_parameters": IMPACT_PARAMETERS,
     "injection_seeds": list(INJECTION_SEEDS),
     "surrogate_seeds": list(SURROGATE_SEEDS),
