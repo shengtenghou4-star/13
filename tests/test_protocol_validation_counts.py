@@ -10,8 +10,8 @@ from houearth.search_grids import physical_single_event_search_durations
 
 SEARCH_DURATIONS = physical_single_event_search_durations((0.08, 0.16))
 VALID_STRATUM = {
-    "array_hash_schema": HASH_SCHEMA,
-    "analyzed_combined_sha256": "a" * 64,
+    "campaign_input_hash_schema": HASH_SCHEMA,
+    "campaign_input_combined_sha256": "a" * 64,
     "product_provenance_sha256": "b" * 64,
     "query_provenance_sha256": "c" * 64,
 }
