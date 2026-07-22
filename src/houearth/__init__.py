@@ -17,6 +17,13 @@ from .real_evaluation import (
 )
 from .search import search_periodic_transits, search_single_transits
 from .stratification import LightCurveStratum, classify_lightcurve
+from .surrogate_significance import (
+    SurrogateCalibratedCell,
+    SurrogateCalibratedTrial,
+    calibrate_physical_trials,
+    empirical_familywise_p,
+    summarize_surrogate_calibrated_trials,
+)
 from .surrogates import SurrogateSummary, SurrogateTrial, run_surrogate_null_campaign
 
 __all__ = [
@@ -31,9 +38,13 @@ __all__ = [
     "RealInjectionTrial",
     "SingleTransitEvent",
     "SingleTransitTrial",
+    "SurrogateCalibratedCell",
+    "SurrogateCalibratedTrial",
     "SurrogateSummary",
     "SurrogateTrial",
+    "calibrate_physical_trials",
     "classify_lightcurve",
+    "empirical_familywise_p",
     "inject_physical_single_transit",
     "physical_single_transit_decrement",
     "run_physical_campaign",
@@ -41,6 +52,7 @@ __all__ = [
     "run_surrogate_null_campaign",
     "search_periodic_transits",
     "search_single_transits",
+    "summarize_surrogate_calibrated_trials",
     "wilson_interval",
 ]
 
