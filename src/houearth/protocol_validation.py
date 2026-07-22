@@ -31,11 +31,19 @@ def _mapping(value: object) -> Mapping[str, object]:
     return value if isinstance(value, Mapping) else {}
 
 
-def _safe_int(value: object, *, default: int = 0) -> int:
-    try:
+def _exact_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value) and value.is_integer():
         return int(value)
-    except (TypeError, ValueError, OverflowError):
-        return default
+    return None
+
+
+def _count_or_zero(value: object) -> int:
+    parsed = _exact_int(value)
+    return 0 if parsed is None else parsed
 
 
 def _safe_float(value: object) -> float | None:
@@ -103,10 +111,10 @@ def validate_phase07_summary(
         and _mapping(item.get("surrogate_summary")).get("status") == "completed"
     ]
     physical_trials = sum(
-        _safe_int(item.get("physical_trials")) for item in completed
+        _count_or_zero(item.get("physical_trials")) for item in completed
     )
     surrogate_trials = sum(
-        _safe_int(item.get("surrogate_trials")) for item in completed
+        _count_or_zero(item.get("surrogate_trials")) for item in completed
     )
     errors: list[str] = []
 
@@ -127,14 +135,22 @@ def validate_phase07_summary(
 
     for item in completed:
         target_id = str(item.get("target_id", "unknown"))
-        count = _safe_int(item.get("physical_trials"))
+        count_value = item.get("physical_trials")
+        count = _exact_int(count_value)
+        if count is None:
+            errors.append(f"{target_id}: physical trial count is not an exact integer")
+            count = 0
         if count != physical_trials_per_target:
             errors.append(
                 f"{target_id}: physical trials {count} != {physical_trials_per_target}"
             )
 
         policy = item.get("surrogate_policy")
-        surrogate_count = _safe_int(item.get("surrogate_trials"))
+        surrogate_count_value = item.get("surrogate_trials")
+        surrogate_count = _exact_int(surrogate_count_value)
+        if surrogate_count is None:
+            errors.append(f"{target_id}: surrogate trial count is not an exact integer")
+            surrogate_count = 0
         surrogate_value = item.get("surrogate_summary")
         surrogate_summary = _mapping(surrogate_value)
         surrogate_status = surrogate_summary.get("status")
@@ -168,12 +184,22 @@ def validate_phase07_summary(
         else:
             errors.append(f"{target_id}: unknown surrogate policy {policy!r}")
 
-    reported_physical = _safe_int(
-        summary.get("total_physical_trials"), default=physical_trials
-    )
-    reported_surrogate = _safe_int(
-        summary.get("total_surrogate_trials"), default=surrogate_trials
-    )
+    if "total_physical_trials" in summary:
+        reported_physical = _exact_int(summary.get("total_physical_trials"))
+    else:
+        reported_physical = physical_trials
+    if reported_physical is None:
+        errors.append("reported physical total is not an exact integer")
+        reported_physical = -1
+
+    if "total_surrogate_trials" in summary:
+        reported_surrogate = _exact_int(summary.get("total_surrogate_trials"))
+    else:
+        reported_surrogate = surrogate_trials
+    if reported_surrogate is None:
+        errors.append("reported surrogate total is not an exact integer")
+        reported_surrogate = -1
+
     if reported_physical != physical_trials:
         errors.append(
             f"reported physical total {reported_physical} != target sum {physical_trials}"
