@@ -2,7 +2,11 @@
 
 from .core import LightCurve, PeriodicCandidate, SingleTransitEvent
 from .evaluation import CompletenessCell, SingleTransitTrial
-from .physical import inject_physical_single_transit, physical_single_transit_decrement
+from .physical import (
+    exposure_averaged_single_transit_decrement,
+    inject_physical_single_transit,
+    physical_single_transit_decrement,
+)
 from .physical_evaluation import (
     PhysicalCompletenessCell,
     PhysicalInjectionTrial,
@@ -45,6 +49,7 @@ __all__ = [
     "calibrate_physical_trials",
     "classify_lightcurve",
     "empirical_familywise_p",
+    "exposure_averaged_single_transit_decrement",
     "inject_physical_single_transit",
     "physical_single_transit_decrement",
     "run_physical_campaign",
