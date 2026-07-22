@@ -1,0 +1,48 @@
+name: Stratified physical TESS calibration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/stratified-physical-calibration.yml"
+      - "data/stratified_targets_v0.7.csv"
+      - "examples/run_stratified_physical_batch.py"
+      - "src/houearth/physical.py"
+      - "src/houearth/physical_evaluation.py"
+      - "src/houearth/stratification.py"
+      - "src/houearth/surrogates.py"
+      - "src/houearth/real_evaluation.py"
+      - "src/houearth/search.py"
+      - "src/houearth/io.py"
+      - "tests/test_physical.py"
+      - "tests/test_stratification.py"
+      - "tests/test_surrogates.py"
+  push:
+    paths:
+      - ".github/workflows/stratified-physical-calibration.yml"
+      - "data/stratified_targets_v0.7.csv"
+      - "examples/run_stratified_physical_batch.py"
+      - "src/houearth/physical.py"
+      - "src/houearth/physical_evaluation.py"
+      - "src/houearth/stratification.py"
+      - "src/houearth/surrogates.py"
+
+jobs:
+  stratified-physical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[tess,dev]'
+      - run: pytest -q
+      - run: python examples/run_stratified_physical_batch.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stratified-physical-tess-v0.7
+          path: outputs/stratified-physical-v0.7/
