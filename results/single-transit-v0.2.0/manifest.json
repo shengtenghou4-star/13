@@ -1,0 +1,23 @@
+{
+  "result_id": "single-transit-v0.2.0",
+  "status": "synthetic calibration; not an astrophysical discovery result",
+  "software_version": "0.2.0",
+  "baseline_days": 27.0,
+  "cadence_minutes": 30.0,
+  "white_noise_fraction": 0.0018,
+  "minimum_event_snr": 5.0,
+  "depth_grid": [0.002, 0.004, 0.008, 0.012],
+  "duration_grid_days": [0.08, 0.16, 0.32],
+  "trials_per_cell": 8,
+  "seeds": [0, 1, 2, 3, 4, 5, 6, 7],
+  "headline": {
+    "depth_0.004_duration_0.16_completeness": 0.75,
+    "depth_0.008_all_tested_durations_completeness": 1.0,
+    "reported_false_events_across_grid": 0
+  },
+  "limitations": [
+    "Synthetic low-frequency variability plus Gaussian noise is less diverse than real TESS systematics.",
+    "The grid is small and estimates have wide binomial uncertainty.",
+    "Zero reported false events in this campaign does not imply a zero false-alarm rate on flight data."
+  ]
+}
