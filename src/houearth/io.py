@@ -31,7 +31,7 @@ def _fingerprinted_lightcurve(
     target: str,
     metadata: dict[str, Any],
 ) -> LightCurve:
-    """Construct first, then hash the exact cleaned and sorted analyzed arrays."""
+    """Construct first, then fingerprint the cleaned campaign-input arrays."""
     prepared = LightCurve(
         time,
         flux,
@@ -49,7 +49,7 @@ def _fingerprinted_lightcurve(
         prepared.flux,
         prepared.flux_err,
         target=prepared.target,
-        metadata={**prepared.metadata, "analyzed_array_hashes": array_hashes},
+        metadata={**prepared.metadata, "campaign_input_array_hashes": array_hashes},
     )
 
 
