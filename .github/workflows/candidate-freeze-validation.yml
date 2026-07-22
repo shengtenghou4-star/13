@@ -13,6 +13,7 @@ on:
       - "src/houearth/candidate_freeze.py"
       - "src/houearth/candidate_protocol_validation.py"
       - "src/houearth/provenance.py"
+      - "tests/test_candidate_closed_schema.py"
       - "tests/test_candidate_freeze.py"
       - "tests/test_candidate_freeze_guardrails.py"
       - "tests/test_candidate_protocol_validation.py"
@@ -29,6 +30,7 @@ on:
       - "src/houearth/candidate_freeze.py"
       - "src/houearth/candidate_protocol_validation.py"
       - "src/houearth/provenance.py"
+      - "tests/test_candidate_closed_schema.py"
       - "tests/test_candidate_freeze.py"
       - "tests/test_candidate_freeze_guardrails.py"
       - "tests/test_candidate_protocol_validation.py"
@@ -54,6 +56,7 @@ jobs:
       - name: Run candidate freeze and attack tests
         run: >-
           pytest -q
+          tests/test_candidate_closed_schema.py
           tests/test_candidate_freeze.py
           tests/test_candidate_freeze_guardrails.py
           tests/test_candidate_protocol_validation.py
