@@ -1,0 +1,46 @@
+name: Real TESS 50-200 ppm sweep
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/real-ppm-calibration.yml"
+      - "data/real_calibration_targets.csv"
+      - "examples/run_real_ppm_batch.py"
+      - "src/houearth/core.py"
+      - "src/houearth/io.py"
+      - "src/houearth/real_evaluation.py"
+      - "src/houearth/real_reporting.py"
+      - "src/houearth/search.py"
+      - "src/houearth/preprocess.py"
+  pull_request:
+    paths:
+      - ".github/workflows/real-ppm-calibration.yml"
+      - "data/real_calibration_targets.csv"
+      - "examples/run_real_ppm_batch.py"
+      - "src/houearth/core.py"
+      - "src/houearth/io.py"
+      - "src/houearth/real_evaluation.py"
+      - "src/houearth/real_reporting.py"
+      - "src/houearth/search.py"
+      - "src/houearth/preprocess.py"
+
+jobs:
+  ppm-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[tess,dev]'
+      - run: pytest -q
+      - run: python examples/run_real_ppm_batch.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-tess-ppm-batch
+          path: outputs/real-ppm-batch/
