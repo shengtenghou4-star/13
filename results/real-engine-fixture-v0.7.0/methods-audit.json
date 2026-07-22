@@ -1,0 +1,67 @@
+{
+  "project": "HOU-EARTH",
+  "version": "0.7.0-development",
+  "date": "2026-07-22",
+  "status": "targeted reconstructed critical-path validation; full repository CI and TESS execution pending",
+  "source_branch": "agent/v0.7-clean-validation",
+  "targeted_test_result": {
+    "passed": 36,
+    "failed": 0,
+    "elapsed_seconds": 0.25
+  },
+  "validated_paths": [
+    "quadratic limb-darkened physical transit geometry",
+    "finite-exposure supersampling and provenance",
+    "generator-safe physical experiment axes",
+    "winning-template-matched brightening controls",
+    "shared six-duration physical and surrogate search family",
+    "unconditional moving-block surrogate maxima",
+    "add-one empirical familywise p-values",
+    "Wilson intervals for empirical significant completeness",
+    "scale-separated target variability and correlation strata",
+    "balanced six-target protocol manifest",
+    "independent evidence-package acceptance gates",
+    "malformed and non-integral evidence rejection"
+  ],
+  "frozen_search_duration_family_days": [
+    0.052,
+    0.08,
+    0.104,
+    0.116,
+    0.16,
+    0.232
+  ],
+  "scientific_defects_found_and_corrected": [
+    {
+      "issue": "surrogate nulls initially searched fewer duration templates than physical recoveries",
+      "risk": "anti-conservative empirical p-values from a smaller null search space",
+      "correction": "one shared duration-grid function plus evidence validation of root and per-target declarations"
+    },
+    {
+      "issue": "significant completeness lacked a sampling interval",
+      "risk": "overconfident interpretation of four injections per physical cell",
+      "correction": "95 percent Wilson interval for empirically significant completeness"
+    },
+    {
+      "issue": "brightening controls followed injected duration rather than the winning recovery template",
+      "risk": "duration-mismatched same-light-curve control margin",
+      "correction": "record recovered and control template durations and match controls to the winning template"
+    },
+    {
+      "issue": "nested experiment axes accepted one-shot generators",
+      "risk": "silent under-execution after generator exhaustion",
+      "correction": "freeze all physical experiment axes to reusable tuples before nested iteration"
+    },
+    {
+      "issue": "evidence counts were coercible with int(value)",
+      "risk": "fractional, boolean, or string counts could masquerade as valid integer trial totals",
+      "correction": "accept only exact JSON integer values or mathematically integral finite floats"
+    }
+  ],
+  "local_validation_note": "An intermediate local mirror run produced failures because a compact adapter patch accidentally scoped variables inside an error branch. The adapter was corrected and the complete targeted suite then passed 36/36. The GitHub source file uses explicit multiline control flow and did not contain that compact adapter error.",
+  "limitations": [
+    "The targeted suite reconstructs the critical v0.7 path and is not the full repository test suite.",
+    "The GitHub-hosted jobs remained queued without a runner when this record was frozen.",
+    "No Phase 0.7 six-target TESS flight-data result is claimed here."
+  ]
+}
