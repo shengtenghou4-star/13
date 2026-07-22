@@ -24,7 +24,7 @@ DEPTHS = (0.0001, 0.0002)
 DURATIONS_DAYS = (0.08, 0.16)
 IMPACT_PARAMETERS = (0.0, 0.6)
 INJECTION_SEEDS = range(4)
-SURROGATE_SEEDS = range(32)
+SURROGATE_SEEDS = range(64)
 
 
 def parse_sectors(value: str) -> int | list[int] | None:
@@ -136,15 +136,33 @@ for row in rows:
             encoding="utf-8",
         )
 
-        stage = "red-noise-surrogates"
-        surrogate_trials, surrogate_summary = run_surrogate_null_campaign(
-            lc,
-            seeds=SURROGATE_SEEDS,
-            block_days=0.5,
-            durations=(0.04, 0.08, 0.16),
-            excluded_events=(*background, *brightening),
-        )
-        write_surrogate_outputs(surrogate_trials, surrogate_summary, output)
+        surrogate_policy = row["surrogate_policy"]
+        surrogate_trials_count = 0
+        if surrogate_policy == "unmasked-null":
+            stage = "red-noise-surrogates"
+            surrogate_trials, surrogate_summary = run_surrogate_null_campaign(
+                lc,
+                seeds=SURROGATE_SEEDS,
+                block_days=0.5,
+                durations=(0.04, 0.08, 0.16),
+            )
+            write_surrogate_outputs(surrogate_trials, surrogate_summary, output)
+            surrogate_trials_count = len(surrogate_trials)
+            surrogate_record: dict[str, object] = {
+                "status": "completed",
+                **surrogate_summary.to_dict(),
+            }
+        elif surrogate_policy == "skip-known-transits":
+            surrogate_record = {
+                "status": "skipped",
+                "reason": "known transiting system excluded from no-event surrogate sample",
+            }
+            (output / "surrogate_skip.json").write_text(
+                json.dumps(surrogate_record, indent=2), encoding="utf-8"
+            )
+        else:
+            raise ValueError(f"Unknown surrogate_policy: {surrogate_policy!r}")
+
         all_trials.extend((trial, stratum) for trial in trials)
         status.append(
             {
@@ -152,11 +170,12 @@ for row in rows:
                 "query": row["query"],
                 "status": "completed",
                 "intended_role": row["intended_role"],
+                "surrogate_policy": surrogate_policy,
                 "stratum": stratum.to_dict(),
                 "physical_trials": len(trials),
                 "physical_recovered": sum(trial.recovered for trial in trials),
-                "surrogate_trials": len(surrogate_trials),
-                "surrogate_summary": surrogate_summary.to_dict(),
+                "surrogate_trials": surrogate_trials_count,
+                "surrogate_summary": surrogate_record,
             }
         )
     except Exception as exc:
@@ -179,7 +198,10 @@ summary = {
     "experiment": "HOU-EARTH stratified physical-transit and red-noise pilot",
     "status": "calibration; not a discovery search or survey completeness claim",
     "injection_model": "quadratic-limb-darkened small-planet approximation",
-    "surrogate_model": "event-neutralized circular moving-block bootstrap",
+    "surrogate_model": (
+        "unmasked circular moving-block bootstrap on targets without a confirmed "
+        "transiting system in the pilot; known transit hosts skipped"
+    ),
     "depths": DEPTHS,
     "durations_days": DURATIONS_DAYS,
     "impact_parameters": IMPACT_PARAMETERS,
@@ -187,6 +209,11 @@ summary = {
     "surrogate_seeds": list(SURROGATE_SEEDS),
     "completed_targets": sum(item["status"] == "completed" for item in status),
     "failed_targets": sum(item["status"] == "failed" for item in status),
+    "surrogate_null_eligible_targets": sum(
+        item.get("surrogate_policy") == "unmasked-null"
+        for item in status
+        if item["status"] == "completed"
+    ),
     "total_physical_trials": len(all_trials),
     "total_surrogate_trials": sum(
         int(item.get("surrogate_trials", 0))
