@@ -45,17 +45,20 @@ for row in rows:
             max_products=int(row["max_products"]),
         )
         stage = "screen-and-inject"
-        null_screen, background, trials, cells = run_real_lightcurve_campaign(
-            lc,
-            depths=DEPTHS,
-            durations_days=DURATIONS_DAYS,
-            seeds=SEEDS,
+        null_screen, background, brightening_controls, trials, cells = (
+            run_real_lightcurve_campaign(
+                lc,
+                depths=DEPTHS,
+                durations_days=DURATIONS_DAYS,
+                seeds=SEEDS,
+            )
         )
         stage = "write-evidence"
         write_real_campaign_outputs(
             lc,
             null_screen,
             background,
+            brightening_controls,
             trials,
             cells,
             output,
@@ -70,7 +73,10 @@ for row in rows:
                 "sectors": lc.metadata.get("sectors", []),
                 "products": lc.metadata.get("products"),
                 "cadences": len(lc.time),
-                "background_events": null_screen.event_count,
+                "background_dimming_events": null_screen.event_count,
+                "brightening_control_events": null_screen.brightening_event_count,
+                "dimming_to_brightening_ratio": null_screen.event_count_ratio,
+                "maximum_snr_difference": null_screen.maximum_snr_difference,
                 "cells": [cell.to_dict() for cell in cells],
             }
         )
