@@ -18,6 +18,8 @@ on:
       - "tests/test_stratification.py"
       - "tests/test_surrogates.py"
   push:
+    branches:
+      - main
     paths:
       - ".github/workflows/stratified-physical-calibration.yml"
       - "data/stratified_targets_v0.7.csv"
