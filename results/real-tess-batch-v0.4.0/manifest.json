@@ -1,0 +1,34 @@
+{
+  "result_id": "real-tess-batch-v0.4.0",
+  "status": "real TESS injection/recovery calibration; not a discovery search",
+  "software_version": "0.4.0",
+  "workflow_run_id": 29895256970,
+  "workflow_head_sha": "44a481045c2da97258f4f21eb781f43f83c30b29",
+  "artifact_id": 8519743786,
+  "artifact_name": "real-tess-injection-batch",
+  "artifact_sha256": "ae81ba99ec2197e1a434399b885ab1df44f460ae0109ed423d89d871e3a659f9",
+  "targets_completed": 3,
+  "targets_failed": 0,
+  "trials": 48,
+  "depths": [
+    0.004,
+    0.008
+  ],
+  "durations_days": [
+    0.08,
+    0.16
+  ],
+  "all_cells_recovered": true,
+  "novel_competing_events": 0,
+  "interpretation": "This engineering grid is saturated on the selected bright-star backgrounds; the next calibration must move to shallower depths.",
+  "next_depth_grid": [
+    0.0005,
+    0.001,
+    0.002
+  ],
+  "caveats": [
+    "The selected stars are screening backgrounds, not certified signal-free controls.",
+    "Dimming and brightening pre-injection events remain unclassified until astrophysical vetting.",
+    "Perfect recovery at 0.4%-0.8% does not imply sensitivity to Earth-size transits."
+  ]
+}
