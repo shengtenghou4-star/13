@@ -1,12 +1,14 @@
-name: Real TESS injection calibration
+name: Real TESS 50-200 ppm sweep
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - ".github/workflows/real-data-calibration.yml"
+      - ".github/workflows/real-ppm-calibration.yml"
       - "data/real_calibration_targets.csv"
-      - "examples/run_real_calibration_batch.py"
+      - "examples/run_real_ppm_batch.py"
+      - "examples/postprocess_matched_controls.py"
+      - "src/houearth/control_significance.py"
       - "src/houearth/core.py"
       - "src/houearth/io.py"
       - "src/houearth/real_evaluation.py"
@@ -15,9 +17,11 @@ on:
       - "src/houearth/preprocess.py"
   pull_request:
     paths:
-      - ".github/workflows/real-data-calibration.yml"
+      - ".github/workflows/real-ppm-calibration.yml"
       - "data/real_calibration_targets.csv"
-      - "examples/run_real_calibration_batch.py"
+      - "examples/run_real_ppm_batch.py"
+      - "examples/postprocess_matched_controls.py"
+      - "src/houearth/control_significance.py"
       - "src/houearth/core.py"
       - "src/houearth/io.py"
       - "src/houearth/real_evaluation.py"
@@ -26,9 +30,9 @@ on:
       - "src/houearth/preprocess.py"
 
 jobs:
-  calibrate-real-data:
+  ppm-sweep:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,9 +42,10 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[tess,dev]'
       - run: pytest -q
-      - run: python examples/run_real_calibration_batch.py
+      - run: python examples/run_real_ppm_batch.py
+      - run: python examples/postprocess_matched_controls.py outputs/real-ppm-batch
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: real-tess-injection-batch
-          path: outputs/real-calibration-batch/
+          name: real-tess-ppm-batch
+          path: outputs/real-ppm-batch/
