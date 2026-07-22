@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
+from .benchmarks import BENCHMARKS, run_known_planet_benchmark
+from .evaluation import run_single_transit_campaign, write_campaign_outputs
 from .io import download_tess_lightcurve, save_lightcurve_csv
 from .report import write_diagnostic_plot, write_html_report, write_json
 from .search import search_periodic_transits, search_single_transits
@@ -41,6 +44,13 @@ def _run_pipeline(
         print("Plot skipped (install matplotlib or the tess extra).")
 
 
+def _parse_float_list(value: str) -> tuple[float, ...]:
+    parsed = tuple(float(item.strip()) for item in value.split(",") if item.strip())
+    if not parsed:
+        raise argparse.ArgumentTypeError("provide at least one comma-separated number")
+    return parsed
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="houearth")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -63,6 +73,26 @@ def build_parser() -> argparse.ArgumentParser:
     tess.add_argument("--min-period", type=float, default=1.0)
     tess.add_argument("--max-period", type=float, default=None)
     tess.add_argument("--period-steps", type=int, default=700)
+
+    benchmark = sub.add_parser("benchmark", help="recover a versioned known TESS planet")
+    benchmark.add_argument("key", choices=sorted(BENCHMARKS))
+    benchmark.add_argument("--output", type=Path)
+    benchmark.add_argument("--author", default="SPOC")
+
+    calibrate = sub.add_parser(
+        "calibrate-single",
+        help="measure isolated-transit completeness on a depth-duration grid",
+    )
+    calibrate.add_argument("--depths", type=_parse_float_list, default=(0.002, 0.004, 0.008, 0.012))
+    calibrate.add_argument("--durations", type=_parse_float_list, default=(0.08, 0.16, 0.32))
+    calibrate.add_argument("--trials", type=int, default=8)
+    calibrate.add_argument("--baseline", type=float, default=27.0)
+    calibrate.add_argument("--cadence-minutes", type=float, default=30.0)
+    calibrate.add_argument("--noise", type=float, default=0.0018)
+    calibrate.add_argument("--min-snr", type=float, default=5.0)
+    calibrate.add_argument(
+        "--output", type=Path, default=Path("outputs/single-transit-completeness")
+    )
     return parser
 
 
@@ -82,6 +112,32 @@ def main() -> None:
             args.max_period,
             args.period_steps,
         )
+        return
+
+    if args.command == "benchmark":
+        output = args.output or Path("outputs/benchmarks") / args.key
+        result = run_known_planet_benchmark(
+            args.key,
+            output_dir=output,
+            author=args.author,
+        )
+        print(json.dumps(result, indent=2))
+        return
+
+    if args.command == "calibrate-single":
+        if args.trials < 1:
+            raise SystemExit("--trials must be positive")
+        trials, cells = run_single_transit_campaign(
+            depths=args.depths,
+            durations_days=args.durations,
+            seeds=range(args.trials),
+            baseline_days=args.baseline,
+            cadence_minutes=args.cadence_minutes,
+            noise=args.noise,
+            min_snr=args.min_snr,
+        )
+        write_campaign_outputs(trials, cells, args.output)
+        print(json.dumps([cell.to_dict() for cell in cells], indent=2))
         return
 
     sector = args.sector
