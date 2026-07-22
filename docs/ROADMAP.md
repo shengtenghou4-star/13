@@ -4,7 +4,7 @@
 
 Build an open, auditable discovery engine that can surface long-period and sparse-transit candidates in public TESS observations, then move the strongest targets through professional-grade vetting and external follow-up.
 
-## Phase 0 — Calibrated engine (current)
+## Phase 0 — Calibrated engine
 
 **Evidence gate**
 
@@ -69,3 +69,17 @@ The public observatory should eventually show:
 ## Anti-hype rule
 
 Use the labels `signal`, `event`, `candidate`, `validated planet`, and `confirmed planet` precisely. The UI must never promote an automated score into a discovery claim.
+
+## Phase 0.2 checkpoint — 2026-07-22
+
+Completed:
+
+- generalized known-planet benchmark registry;
+- short-period benchmark: LHS 3844 b;
+- medium-period benchmark: pi Mensae c;
+- long-period benchmark definition: TOI-700 d using its eleven Year-1 sectors;
+- deterministic 96-trial isolated-event completeness grid;
+- frozen calibration manifest and machine-readable result table;
+- separate cloud workflows for fast benchmarks, long-period recovery, and completeness.
+
+The next scientific bottleneck is realism, not another user-interface feature: inject signals into real, quiet TESS light curves and measure recovery and false alarms across magnitude, cadence, crowding, and stellar variability bins.
