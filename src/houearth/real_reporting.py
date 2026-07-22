@@ -20,6 +20,7 @@ class PooledCompletenessCell:
     confidence_high: float
     median_recovered_snr: float | None
     median_timing_error_days: float | None
+    median_snr_above_control: float | None
     mean_novel_competing_events: float
 
     def to_dict(self) -> dict[str, object]:
@@ -42,6 +43,11 @@ def pool_real_trials(trials: Iterable[RealInjectionTrial]) -> list[PooledComplet
             for trial in recovered
             if trial.timing_error_days is not None
         ]
+        margins = [
+            trial.snr_above_control
+            for trial in recovered
+            if trial.snr_above_control is not None
+        ]
         cells.append(
             PooledCompletenessCell(
                 depth=depth,
@@ -54,6 +60,9 @@ def pool_real_trials(trials: Iterable[RealInjectionTrial]) -> list[PooledComplet
                 confidence_high=high,
                 median_recovered_snr=None if not snrs else float(np.median(snrs)),
                 median_timing_error_days=None if not timing else float(np.median(timing)),
+                median_snr_above_control=(
+                    None if not margins else float(np.median(margins))
+                ),
                 mean_novel_competing_events=float(
                     np.mean([trial.novel_competing_events for trial in group])
                 ),
