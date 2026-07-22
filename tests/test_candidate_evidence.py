@@ -75,7 +75,12 @@ def evidence_payload() -> dict[str, object]:
         source_commit="a" * 40,
         frozen_at_utc="2026-07-22T10:00:00Z",
     )
-    return evidence.to_dict()
+    payload = evidence.to_dict()
+    payload["machine_events"] = list(payload["machine_events"])
+    payload["candidate_table"]["candidates"] = list(
+        payload["candidate_table"]["candidates"]
+    )
+    return payload
 
 
 def rehash_events_and_package(payload: dict[str, object]) -> None:
