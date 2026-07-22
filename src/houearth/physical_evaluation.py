@@ -29,6 +29,8 @@ class PhysicalInjectionTrial:
     radius_ratio: float
     limb_u1: float
     limb_u2: float
+    exposure_days: float
+    supersample: int
     seed: int
     injected_center_days: float
     local_coverage_fraction: float
@@ -90,8 +92,10 @@ def run_physical_injection_trial(
     min_snr: float,
     limb_u1: float,
     limb_u2: float,
+    supersample: int = 7,
 ) -> PhysicalInjectionTrial:
     normalized = lc.normalized()
+    exposure_days = normalized.cadence
     excluded_events = [*background_events, *brightening_controls]
     windows = _valid_injection_windows(
         normalized,
@@ -114,6 +118,8 @@ def run_physical_injection_trial(
         impact_parameter=impact_parameter,
         u1=limb_u1,
         u2=limb_u2,
+        exposure_days=exposure_days,
+        supersample=supersample,
     )
     injected = LightCurve(
         normalized.time,
@@ -122,14 +128,19 @@ def run_physical_injection_trial(
         target=normalized.target,
         metadata={
             **normalized.metadata,
-            "injection_model": "quadratic-limb-darkened-small-planet",
+            "injection_model": (
+                "quadratic-limb-darkened-small-planet-exposure-averaged"
+            ),
             "injected_center_days": center,
             "injected_depth": depth,
+            "injected_depth_definition": "intrinsic_instantaneous_midpoint",
             "injected_duration_days": duration_days,
             "impact_parameter": impact_parameter,
             "radius_ratio": radius_ratio,
             "limb_u1": limb_u1,
             "limb_u2": limb_u2,
+            "exposure_days": exposure_days,
+            "supersample": supersample,
             "injection_seed": seed,
         },
     )
@@ -167,6 +178,8 @@ def run_physical_injection_trial(
         radius_ratio=radius_ratio,
         limb_u1=limb_u1,
         limb_u2=limb_u2,
+        exposure_days=exposure_days,
+        supersample=supersample,
         seed=seed,
         injected_center_days=center,
         local_coverage_fraction=coverage,
@@ -242,6 +255,7 @@ def run_physical_campaign(
     flatten_window_days: float = 1.5,
     limb_u1: float = 0.35,
     limb_u2: float = 0.25,
+    supersample: int = 7,
 ) -> tuple[
     object,
     list[SingleTransitEvent],
@@ -277,6 +291,7 @@ def run_physical_campaign(
             min_snr=min_snr,
             limb_u1=limb_u1,
             limb_u2=limb_u2,
+            supersample=supersample,
         )
         for depth in depths
         for duration in durations
