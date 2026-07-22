@@ -10,8 +10,8 @@ from houearth.search_grids import physical_single_event_search_durations
 
 SEARCH_DURATIONS = physical_single_event_search_durations((0.08, 0.16))
 VALID_STRATUM = {
-    "array_hash_schema": HASH_SCHEMA,
-    "analyzed_combined_sha256": "a" * 64,
+    "campaign_input_hash_schema": HASH_SCHEMA,
+    "campaign_input_combined_sha256": "a" * 64,
     "product_provenance_sha256": "b" * 64,
     "query_provenance_sha256": "c" * 64,
 }
@@ -160,10 +160,10 @@ def test_mismatched_root_search_family_is_rejected() -> None:
 
 def test_missing_or_invalid_data_fingerprints_are_rejected() -> None:
     summary = valid_summary()
-    summary["targets"][0]["stratum"]["analyzed_combined_sha256"] = "not-a-hash"
-    summary["targets"][1]["stratum"]["array_hash_schema"] = "wrong-schema"
+    summary["targets"][0]["stratum"]["campaign_input_combined_sha256"] = "not-a-hash"
+    summary["targets"][1]["stratum"]["campaign_input_hash_schema"] = "wrong-schema"
     with pytest.raises(ProtocolValidationError) as captured:
         validate_phase07_summary(summary)
     errors = captured.value.report.errors
-    assert any("analyzed_combined_sha256 is missing or invalid" in error for error in errors)
-    assert any("analyzed-array hash schema is inconsistent" in error for error in errors)
+    assert any("campaign_input_combined_sha256 is missing or invalid" in error for error in errors)
+    assert any("campaign-input hash schema is inconsistent" in error for error in errors)
