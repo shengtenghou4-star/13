@@ -64,9 +64,8 @@ def test_finite_exposure_smooths_contact_boundary() -> None:
         duration=0.08,
         radius_ratio=radius_ratio,
         exposure_days=0.01,
-        supersample= nine := 9,
+        supersample=9,
     )[0]
-    assert nine == 9
     assert instantaneous == 0.0
     assert averaged > 0.0
     assert averaged < 0.001
