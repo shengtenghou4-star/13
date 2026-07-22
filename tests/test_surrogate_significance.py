@@ -6,7 +6,7 @@ from houearth.surrogate_significance import (
     empirical_familywise_p,
     summarize_surrogate_calibrated_trials,
 )
-from houearth.surrogates import SurrogateTrial
+from houearth.surrogates import GAP_AWARE_METHOD, SurrogateTrial
 
 
 def physical_trial(
@@ -43,8 +43,10 @@ def surrogate_trial(seed: int, maximum: float) -> SurrogateTrial:
         target="star-a",
         sector_label="1",
         seed=seed,
-        method="event-neutralized-circular-moving-block-bootstrap",
+        method=GAP_AWARE_METHOD,
         block_days=0.5,
+        contiguous_segments=1,
+        gap_factor=3.5,
         neutralized_events=0,
         neutralized_points=0,
         dimming_events=int(maximum >= 5.0),
