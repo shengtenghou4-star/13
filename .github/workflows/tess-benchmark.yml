@@ -1,4 +1,4 @@
-name: TESS real-data benchmark
+name: TESS known-planet benchmarks
 
 on:
   workflow_dispatch:
@@ -6,12 +6,16 @@ on:
     paths:
       - ".github/workflows/tess-benchmark.yml"
       - "src/**"
-      - "examples/benchmark_pi_men.py"
+      - "examples/run_benchmark.py"
 
 jobs:
-  pi-men-sector-1:
+  fast-benchmarks:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [lhs3844b, pimenc]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,9 +24,9 @@ jobs:
           cache: "pip"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[tess]'
-      - run: python examples/benchmark_pi_men.py
+      - run: houearth benchmark "${{ matrix.target }}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pi-men-sector-1-benchmark
-          path: outputs/pi-men-benchmark/
+          name: benchmark-${{ matrix.target }}
+          path: outputs/benchmarks/${{ matrix.target }}/
