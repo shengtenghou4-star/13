@@ -37,8 +37,10 @@ class PhysicalInjectionTrial:
     local_coverage_fraction: float
     recovered: bool
     recovered_center_days: float | None
+    recovered_duration_days: float | None
     recovered_snr: float | None
     timing_error_days: float | None
+    matched_control_duration_days: float | None
     matched_control_snr: float | None
     snr_above_matched_control: float | None
     novel_competing_events: int
@@ -67,16 +69,16 @@ class PhysicalCompletenessCell:
         return asdict(self)
 
 
-def _matched_control_snr(
+def _matched_control(
     controls: Sequence[SingleTransitEvent],
     duration_days: float,
-) -> float | None:
+) -> tuple[float | None, float | None]:
     if not controls:
-        return None
+        return None, None
     available = sorted({event.duration_days for event in controls})
     matched_duration = min(available, key=lambda value: abs(value - duration_days))
     values = [event.snr for event in controls if event.duration_days == matched_duration]
-    return None if not values else float(max(values))
+    return matched_duration, (None if not values else float(max(values)))
 
 
 def run_physical_injection_trial(
@@ -165,7 +167,10 @@ def run_physical_injection_trial(
             continue
         novel_competing += 1
 
-    control_snr = _matched_control_snr(brightening_controls, duration_days)
+    winning_duration = duration_days if best is None else best.duration_days
+    control_duration, control_snr = _matched_control(
+        brightening_controls, winning_duration
+    )
     margin = None
     if best is not None and control_snr is not None:
         margin = float(best.snr - control_snr)
@@ -186,8 +191,10 @@ def run_physical_injection_trial(
         local_coverage_fraction=coverage,
         recovered=best is not None,
         recovered_center_days=None if best is None else best.center_time_days,
+        recovered_duration_days=None if best is None else best.duration_days,
         recovered_snr=None if best is None else best.snr,
         timing_error_days=None if best is None else abs(best.center_time_days - center),
+        matched_control_duration_days=control_duration,
         matched_control_snr=control_snr,
         snr_above_matched_control=margin,
         novel_competing_events=novel_competing,
@@ -272,7 +279,12 @@ def run_physical_campaign(
     list[PhysicalInjectionTrial],
     list[PhysicalCompletenessCell],
 ]:
+    depth_values = tuple(float(value) for value in depths)
     durations = tuple(float(value) for value in durations_days)
+    impact_values = tuple(float(value) for value in impact_parameters)
+    seed_values = tuple(int(value) for value in seeds)
+    if not depth_values or not impact_values or not seed_values:
+        raise ValueError("depths, impact parameters, and seeds must be non-empty")
     search_durations = physical_single_event_search_durations(durations)
     null_screen, background, brightening = screen_real_lightcurve(
         lc,
@@ -283,10 +295,10 @@ def run_physical_campaign(
     trials = [
         run_physical_injection_trial(
             lc,
-            depth=float(depth),
-            duration_days=float(duration),
-            impact_parameter=float(impact),
-            seed=int(seed),
+            depth=depth,
+            duration_days=duration,
+            impact_parameter=impact,
+            seed=seed,
             background_events=background,
             brightening_controls=brightening,
             search_durations=search_durations,
@@ -296,10 +308,10 @@ def run_physical_campaign(
             limb_u2=limb_u2,
             supersample=supersample,
         )
-        for depth in depths
+        for depth in depth_values
         for duration in durations
-        for impact in impact_parameters
-        for seed in seeds
+        for impact in impact_values
+        for seed in seed_values
     ]
     return (
         null_screen,
