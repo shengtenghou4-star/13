@@ -2,6 +2,7 @@ import struct
 
 import numpy as np
 
+from houearth.io import _fingerprinted_lightcurve
 from houearth.provenance import (
     HASH_SCHEMA,
     canonical_array_sha256,
@@ -60,3 +61,27 @@ def test_lightcurve_hashes_record_components_and_missing_uncertainty() -> None:
     assert with_err["flux_err_sha256"] is not None
     assert without_err["flux_err_sha256"] is None
     assert with_err["combined_sha256"] != without_err["combined_sha256"]
+
+
+def test_fingerprint_commits_to_constructed_analyzed_arrays() -> None:
+    time = np.arange(24.0)[::-1]
+    flux = 1.0 + 0.0001 * np.arange(24.0)
+    err = np.full(24, 0.001)
+    flux[5] = np.nan
+    err[11] = 0.0
+
+    preconstruction_hash = lightcurve_array_hashes(time, flux, err)["combined_sha256"]
+    lc = _fingerprinted_lightcurve(
+        time,
+        flux,
+        err,
+        target="fingerprint-fixture",
+        metadata={"source": "fixture"},
+    )
+    expected = lightcurve_array_hashes(lc.time, lc.flux, lc.flux_err)
+    stored = lc.metadata["analyzed_array_hashes"]
+
+    assert len(lc.time) == 22
+    assert np.all(np.diff(lc.time) > 0)
+    assert stored == expected
+    assert stored["combined_sha256"] != preconstruction_hash
