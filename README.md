@@ -10,7 +10,7 @@ HOU-EARTH is a reproducible research system for:
 4. ranking candidates with transparent diagnostics rather than a black-box probability alone;
 5. exporting machine-readable candidate records and human-readable reports.
 
-> Current status: **Phase 0 — calibrated discovery engine**. The code is research scaffolding, not a claim of a new planet.
+> Current status: **Phase 0.2 — measured calibration engine**. The code is research scaffolding, not a claim of a new planet.
 
 ## Why this project exists
 
@@ -72,6 +72,7 @@ A dip is not a planet. HOU-EARTH records evidence and failure modes explicitly. 
 src/houearth/       core library and CLI
 examples/           runnable examples
 tests/              injection-recovery tests
+results/            frozen, versioned calibration evidence
 docs/ROADMAP.md     research phases and evidence gates
 .github/workflows/  continuous integration
 ```
@@ -82,6 +83,26 @@ docs/ROADMAP.md     research phases and evidence gates
 - Recover isolated injected transit events within one cadence-scale tolerance.
 - Reproduce at least three published TESS planets from public light curves.
 - Produce a frozen, auditable candidate table before any novelty claim.
+
+## Phase 0.2: measured detection limits
+
+HOU-EARTH now includes a deterministic single-transit injection/recovery campaign rather than relying on one successful demo:
+
+```bash
+houearth calibrate-single
+```
+
+The first frozen calibration (`results/single-transit-v0.2.0/`) uses 96 trials over a depth-duration grid. Under its stated synthetic noise model, 0.4% events lasting 0.16 days were recovered in 6/8 trials, while every tested 0.8% event was recovered. These are software calibration results, not claims about completeness on real TESS flight data.
+
+Known-planet benchmarks are versioned in code:
+
+```bash
+houearth benchmark lhs3844b
+houearth benchmark pimenc
+houearth benchmark toi700d
+```
+
+The fast GitHub Actions matrix covers LHS 3844 b and pi Mensae c. The heavier TOI-700 d multi-sector benchmark is manual so ordinary commits do not repeatedly download eleven sectors.
 
 ## License
 
