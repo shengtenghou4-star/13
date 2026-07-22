@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import asdict, dataclass
 from typing import Mapping, Sequence
 
+from .provenance import HASH_SCHEMA
 from .search_grids import physical_single_event_search_durations
+
+
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 @dataclass(frozen=True)
@@ -78,6 +83,10 @@ def _same_float_tuple(
     )
 
 
+def _valid_sha256(value: object) -> bool:
+    return isinstance(value, str) and _SHA256_PATTERN.fullmatch(value) is not None
+
+
 def validate_phase07_summary(
     summary: Mapping[str, object],
     *,
@@ -144,6 +153,20 @@ def validate_phase07_summary(
             errors.append(
                 f"{target_id}: physical trials {count} != {physical_trials_per_target}"
             )
+
+        stratum_value = item.get("stratum")
+        stratum = _mapping(stratum_value)
+        if not isinstance(stratum_value, Mapping):
+            errors.append(f"{target_id}: stratum is missing or malformed")
+        if stratum.get("array_hash_schema") != HASH_SCHEMA:
+            errors.append(f"{target_id}: analyzed-array hash schema is inconsistent")
+        for field in (
+            "analyzed_combined_sha256",
+            "product_provenance_sha256",
+            "query_provenance_sha256",
+        ):
+            if not _valid_sha256(stratum.get(field)):
+                errors.append(f"{target_id}: {field} is missing or invalid")
 
         policy = item.get("surrogate_policy")
         surrogate_count_value = item.get("surrogate_trials")
