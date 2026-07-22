@@ -6,16 +6,23 @@ on:
     paths:
       - ".github/workflows/stratified-physical-calibration.yml"
       - "data/stratified_targets_v0.7.csv"
+      - "data/null_target_audit_v0.7.csv"
       - "examples/run_stratified_physical_batch.py"
+      - "examples/validate_stratified_outputs.py"
       - "src/houearth/physical.py"
       - "src/houearth/physical_evaluation.py"
+      - "src/houearth/protocol_validation.py"
       - "src/houearth/stratification.py"
+      - "src/houearth/surrogate_significance.py"
       - "src/houearth/surrogates.py"
       - "src/houearth/real_evaluation.py"
       - "src/houearth/search.py"
       - "src/houearth/io.py"
       - "tests/test_physical.py"
+      - "tests/test_protocol_validation.py"
       - "tests/test_stratification.py"
+      - "tests/test_stratified_protocol.py"
+      - "tests/test_surrogate_significance.py"
       - "tests/test_surrogates.py"
   push:
     branches:
@@ -23,10 +30,14 @@ on:
     paths:
       - ".github/workflows/stratified-physical-calibration.yml"
       - "data/stratified_targets_v0.7.csv"
+      - "data/null_target_audit_v0.7.csv"
       - "examples/run_stratified_physical_batch.py"
+      - "examples/validate_stratified_outputs.py"
       - "src/houearth/physical.py"
       - "src/houearth/physical_evaluation.py"
+      - "src/houearth/protocol_validation.py"
       - "src/houearth/stratification.py"
+      - "src/houearth/surrogate_significance.py"
       - "src/houearth/surrogates.py"
 
 concurrency:
@@ -47,6 +58,7 @@ jobs:
       - run: python -m pip install -e '.[tess,dev]'
       - run: pytest -q
       - run: python examples/run_stratified_physical_batch.py
+      - run: python examples/validate_stratified_outputs.py outputs/stratified-physical-v0.7
       - uses: actions/upload-artifact@v4
         if: always()
         with:
