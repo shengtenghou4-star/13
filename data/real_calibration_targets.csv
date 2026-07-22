@@ -1,0 +1,4 @@
+target_id,query,author,sectors,max_products,role,notes
+tau-ceti,HD 10700,SPOC,,1,screening-background,"Bright nearby star; not certified blank; pre-injection events are retained and reported"
+hd-20794,HD 20794,SPOC,,1,screening-background,"Independent bright-star background; no claim that all astrophysical signals are absent"
+hd-69830,HD 69830,SPOC,,1,screening-background,"Independent K-star background; one archive product limits the first engineering run"
