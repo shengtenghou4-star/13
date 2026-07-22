@@ -89,3 +89,25 @@ def test_known_transit_host_cannot_produce_null_trials() -> None:
     with pytest.raises(ProtocolValidationError) as captured:
         validate_phase07_summary(summary)
     assert any("known transit host" in error for error in captured.value.report.errors)
+
+
+def test_malformed_surrogate_summary_is_structurally_rejected() -> None:
+    summary = valid_summary()
+    null_target = summary["targets"][0]
+    null_target["surrogate_summary"] = None
+    with pytest.raises(ProtocolValidationError) as captured:
+        validate_phase07_summary(summary)
+    errors = captured.value.report.errors
+    assert any("surrogate summary is missing or malformed" in error for error in errors)
+    assert any("null campaign not completed" in error for error in errors)
+
+
+def test_nonfinite_or_malformed_summary_fields_are_rejected_not_crashed() -> None:
+    summary = valid_summary()
+    summary["minimum_resolvable_surrogate_p"] = float("nan")
+    summary["targets"].append("not-an-object")
+    with pytest.raises(ProtocolValidationError) as captured:
+        validate_phase07_summary(summary)
+    errors = captured.value.report.errors
+    assert any("malformed non-object" in error for error in errors)
+    assert any("minimum empirical p resolution" in error for error in errors)
