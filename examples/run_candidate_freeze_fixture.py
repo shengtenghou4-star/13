@@ -4,12 +4,12 @@ import argparse
 import json
 from pathlib import Path
 
-from houearth.candidate_freeze import (
-    BlindCandidateInput,
-    freeze_candidate_table,
-    write_frozen_candidate_table,
+from houearth.candidate_evidence import (
+    freeze_candidate_evidence,
+    validate_candidate_evidence,
+    write_candidate_evidence,
 )
-from houearth.candidate_protocol_validation import validate_frozen_candidate_table
+from houearth.candidate_freeze import BlindCandidateInput
 
 
 SEARCH_DURATIONS = (0.052, 0.08, 0.104, 0.116, 0.16, 0.232)
@@ -93,25 +93,34 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    table = freeze_candidate_table(
+    evidence = freeze_candidate_evidence(
         fixture_events(),
         source_commit=args.source_commit,
         frozen_at_utc="2026-07-22T10:00:00Z",
     )
-    write_frozen_candidate_table(table, args.output)
-    report = validate_frozen_candidate_table(table.to_dict())
+    write_candidate_evidence(evidence, args.output)
+    table_report = __import__(
+        "houearth.candidate_protocol_validation", fromlist=["validate_frozen_candidate_table"]
+    ).validate_frozen_candidate_table(evidence.candidate_table.to_dict())
+    evidence_report = validate_candidate_evidence(evidence.to_dict())
     (args.output / "candidate_validation_report.json").write_text(
-        json.dumps(report.to_dict(), indent=2), encoding="utf-8"
+        json.dumps(table_report.to_dict(), indent=2), encoding="utf-8"
+    )
+    (args.output / "candidate_evidence_validation_report.json").write_text(
+        json.dumps(evidence_report.to_dict(), indent=2), encoding="utf-8"
     )
     manifest = {
         "fixture_only": True,
         "astronomical_claim": "none",
         "source_commit": args.source_commit,
-        "input_events": len(fixture_events()),
-        "frozen_campaign_rows": len(table.candidates),
-        "screened_in_rows": report.screened_in,
-        "candidate_table_sha256": table.table_sha256,
-        "validation_accepted": report.accepted,
+        "input_events": len(evidence.machine_events),
+        "frozen_campaign_rows": len(evidence.candidate_table.candidates),
+        "screened_in_rows": table_report.screened_in,
+        "machine_events_sha256": evidence.machine_events_sha256,
+        "candidate_table_sha256": evidence.candidate_table.table_sha256,
+        "evidence_package_sha256": evidence.package_sha256,
+        "table_validation_accepted": table_report.accepted,
+        "event_stream_validation_accepted": evidence_report.accepted,
     }
     (args.output / "manifest.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8"
