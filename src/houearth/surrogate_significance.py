@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from statistics import median
 from typing import Iterable, Sequence
 
+import numpy as np
+
 from .physical_evaluation import PhysicalInjectionTrial
+from .real_evaluation import wilson_interval
 from .surrogates import SurrogateTrial
 
 
@@ -21,6 +25,7 @@ class SurrogateCalibratedTrial:
     recovered_snr: float | None
     null_trials: int
     minimum_resolvable_p: float
+    significance_alpha: float
     empirical_familywise_p: float | None
     null_p95_maximum_snr: float | None
     snr_above_null_p95: float | None
@@ -40,8 +45,11 @@ class SurrogateCalibratedCell:
     trials: int
     recovered: int
     calibrated_recoveries: int
+    significance_alpha: float
     significant_recoveries_0_05: int
     significant_completeness_0_05: float
+    significant_confidence_low_0_05: float
+    significant_confidence_high_0_05: float
     fraction_of_recoveries_significant_0_05: float | None
     median_empirical_familywise_p: float | None
     median_snr_above_null_p95: float | None
@@ -72,8 +80,8 @@ def calibrate_physical_trials(
     *,
     alpha: float = 0.05,
 ) -> list[SurrogateCalibratedTrial]:
-    if not 0 < alpha < 1:
-        raise ValueError("alpha must be in (0, 1)")
+    if not math.isclose(alpha, 0.05, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("the Phase 0.7 evidence schema is frozen at alpha=0.05")
     nulls = [
         float(trial.maximum_dimming_snr)
         for trial in surrogate_trials
@@ -81,9 +89,7 @@ def calibrate_physical_trials(
     ]
     if not nulls:
         raise ValueError("surrogate trials contain no dimming maxima")
-    ordered = sorted(nulls)
-    p95_index = max(0, min(len(ordered) - 1, int(round(0.95 * (len(ordered) - 1)))))
-    null_p95 = float(ordered[p95_index])
+    null_p95 = float(np.quantile(nulls, 0.95))
     resolution = 1.0 / (1.0 + len(nulls))
 
     rows: list[SurrogateCalibratedTrial] = []
@@ -107,6 +113,7 @@ def calibrate_physical_trials(
                 recovered_snr=trial.recovered_snr,
                 null_trials=len(nulls),
                 minimum_resolvable_p=resolution,
+                significance_alpha=alpha,
                 empirical_familywise_p=p_value,
                 null_p95_maximum_snr=null_p95,
                 snr_above_null_p95=margin,
@@ -135,6 +142,10 @@ def summarize_surrogate_calibrated_trials(
 
     cells: list[SurrogateCalibratedCell] = []
     for (target, sector, depth, duration, impact), group in sorted(grouped.items()):
+        alphas = {row.significance_alpha for row in group}
+        if len(alphas) != 1:
+            raise ValueError("a calibrated cell cannot mix significance thresholds")
+        alpha = next(iter(alphas))
         recovered = [row for row in group if row.recovered]
         calibrated = [
             row for row in recovered if row.empirical_familywise_p is not None
@@ -142,6 +153,9 @@ def summarize_surrogate_calibrated_trials(
         significant = [
             row for row in calibrated if row.significant_at_0_05 is True
         ]
+        significant_low, significant_high = wilson_interval(
+            len(significant), len(group)
+        )
         p_values = [
             float(row.empirical_familywise_p)
             for row in calibrated
@@ -162,8 +176,11 @@ def summarize_surrogate_calibrated_trials(
                 trials=len(group),
                 recovered=len(recovered),
                 calibrated_recoveries=len(calibrated),
+                significance_alpha=alpha,
                 significant_recoveries_0_05=len(significant),
                 significant_completeness_0_05=len(significant) / len(group),
+                significant_confidence_low_0_05=significant_low,
+                significant_confidence_high_0_05=significant_high,
                 fraction_of_recoveries_significant_0_05=(
                     None if not calibrated else len(significant) / len(calibrated)
                 ),
