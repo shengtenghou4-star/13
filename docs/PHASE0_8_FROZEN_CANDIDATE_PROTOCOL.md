@@ -9,10 +9,10 @@
 Phase 0.8 prevents post-selection bias between machine detection and human vetting.
 The central rule is:
 
-> The complete machine-ranked candidate table, its thresholds, source commit, input
-> fingerprints, and SHA-256 commitment must be frozen before any candidate image,
-> target identity context, catalogue cross-match, or astrophysical interpretation is
-> inspected by a human reviewer.
+> The complete machine event stream, the derived blind candidate table, all thresholds,
+> source commit, input fingerprints, and cryptographic commitments must be frozen before
+> any candidate image, catalogue cross-match, target context, or astrophysical
+> interpretation is inspected by a human reviewer.
 
 A frozen row is an event requiring vetting. It is not a planet candidate in the
 astrophysical-confirmation sense and is never a discovery claim by itself.
@@ -30,13 +30,32 @@ Only machine-produced fields declared in `BlindCandidateInput` may enter selecti
 - the single frozen search-duration family;
 - source event index.
 
-The table builder does not accept human notes, plot classifications, catalogue labels,
-known-planet status, target fame, spectral type, habitability language, or a manual
-priority score.
+The schemas are closed. Undeclared fields are rejected, including human notes, plot
+classifications, catalogue labels, known-planet status, target fame, spectral type,
+habitability language, and manual priority scores. Boolean or text values cannot
+masquerade as numerical evidence.
 
-## 3. Target-level reduction
+## 3. Complete machine event stream
 
-The input event stream may contain multiple dimming events from one campaign-input light
+The evidence package retains every machine event considered before target-level
+reduction. Events are sorted canonically by target, campaign-input hash, source event
+index, event time, duration, depth, SNR, and empirical p-value.
+
+The package records:
+
+- the complete closed-schema event rows;
+- a SHA-256 of the canonical event stream;
+- the selected candidate table;
+- the candidate-table SHA-256;
+- a package SHA-256 binding the event stream and table together.
+
+This layer is mandatory. A candidate table by itself cannot prove that an omitted local
+peak was not actually the predeclared winner. `competing_events_considered` is verified
+against the retained event stream rather than trusted as a self-reported number.
+
+## 4. Target-level reduction
+
+The event stream may contain multiple dimming events from one campaign-input light
 curve. Before table-wide multiplicity correction, each `(target_id,
 campaign_input_sha256)` pair is reduced to exactly one event under this fixed order:
 
@@ -47,13 +66,16 @@ campaign_input_sha256)` pair is reduced to exactly one event under this fixed or
 5. earlier event time;
 6. lower source event index.
 
+One campaign-input hash cannot belong to multiple targets. Within a campaign, target
+name and sector label must be consistent and source event indices must be unique.
+
 This reduction prevents a noisy target with many reported local peaks from receiving
 more table-wide opportunities than a quiet target.
 
-## 4. Multiplicity and blind screen
+## 5. Multiplicity and blind screen
 
 The retained target-level p-values are adjusted with the Benjamini-Hochberg procedure.
-The default frozen gates are:
+The Phase 0.8 thresholds are fixed, not caller-selectable defaults:
 
 - target-level familywise p-value `<= 0.05`;
 - table-level Benjamini-Hochberg q-value `<= 0.10`;
@@ -66,7 +88,7 @@ The BH layer is a project-level screening device, not proof of independence amon
 stars, sectors, or instrumental systematics. Dependence sensitivity remains a later
 analysis gate.
 
-## 5. Frozen order
+## 6. Frozen order
 
 Rows are ordered without human input:
 
@@ -80,44 +102,59 @@ Rows are ordered without human input:
 The resulting `blind_priority_rank` is the only permitted order for the first human
 inspection pass.
 
-## 6. Freeze evidence
+## 7. Freeze evidence
 
-Every table records:
+Every candidate table records:
 
 - schema version;
 - immutable source Git commit;
-- explicit UTC freeze timestamp;
-- both statistical thresholds;
-- human-readable selection and ranking rules;
+- canonical UTC freeze timestamp in `YYYY-MM-DDTHH:MM:SSZ` form;
+- both fixed statistical thresholds;
+- exact selection and ranking rules;
 - deterministic candidate IDs;
 - the complete screened-in and screened-out row set;
 - `manual_review_status = unopened`;
 - `astrophysical_status = unclassified`;
 - canonical table SHA-256.
 
-The canonical hash covers every field except the hash field itself. List/tuple
-serialization differences are normalized by the repository's canonical JSON encoder.
+Every complete evidence package additionally records the full machine event stream,
+event-stream SHA-256, and package SHA-256. Canonical hashes cover every field except
+their own hash field. List/tuple serialization differences are normalized by the
+repository's canonical JSON encoder.
 
-## 7. Independent validation
+## 8. Independent validation
 
 `validate_frozen_candidate_table` independently recomputes:
 
+- closed top-level and row schemas;
 - deterministic candidate IDs;
 - one-row-per-campaign uniqueness;
 - sequential blind ranks;
 - the common search-duration family;
 - BH q-values;
+- matched-control arithmetic;
 - machine exclusion reasons and blind status;
 - frozen row ordering;
 - unopened/unclassified human-state fields;
 - the full table SHA-256.
 
-A rehashed but methodologically altered table is rejected. This matters because a valid
-checksum alone only proves internal consistency, not compliance with the frozen method.
+`validate_candidate_evidence` additionally recomputes from the complete machine stream:
 
-## 8. Human review sequence
+- closed event-row schemas and strict numerical types;
+- canonical event order and event-stream SHA-256;
+- campaign grouping and event-index uniqueness;
+- the predeclared winner for every campaign input;
+- every winner field copied into the candidate row;
+- the exact number of competing events;
+- package identity and package SHA-256.
 
-Only after the table and validation report are frozen may reviewers:
+A rehashed but methodologically altered payload is rejected. This matters because a
+valid checksum alone proves internal consistency, not compliance with the frozen method.
+
+## 9. Human review sequence
+
+Only after the event stream, table, package hashes, and both validation reports are
+frozen may reviewers:
 
 1. inspect light-curve plots in blind rank order;
 2. examine neighboring pixels and centroid diagnostics;
@@ -125,22 +162,22 @@ Only after the table and validation report are frozen may reviewers:
 4. assign structured vetoes or follow-up priorities;
 5. append a separate post-freeze review layer.
 
-The original table is immutable. Manual annotations must be stored separately and keyed
-by `candidate_id`.
+The original event stream and table are immutable. Manual annotations must be stored
+separately and keyed by `candidate_id`.
 
-## 9. Corrections and amendments
+## 10. Corrections and amendments
 
 A software or evidence error discovered after freeze must not be edited in place.
 Instead:
 
-1. retain the original table and validation report;
+1. retain the original event stream, table, package, and validation reports;
 2. document the defect and affected rows;
 3. increment the schema or protocol version;
-4. rerun the complete machine pipeline from frozen inputs;
-5. issue a new table hash and explicit supersession record;
+4. rerun the complete machine pipeline from frozen campaign inputs;
+5. issue new event-stream, table, and package hashes with an explicit supersession record;
 6. restart blind review for any newly introduced or reordered rows.
 
-## 10. Prohibited interpretations
+## 11. Prohibited interpretations
 
 Phase 0.8 does not establish:
 
@@ -151,4 +188,5 @@ Phase 0.8 does not establish:
 - immunity from catalogue, aperture, centroid, binary, or stellar-variability false
   positives.
 
-It creates an auditable boundary between machine selection and human interpretation.
+It creates an auditable boundary between complete machine selection and human
+interpretation.
