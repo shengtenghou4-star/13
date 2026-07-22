@@ -25,6 +25,11 @@ class NullScreenResult:
     event_count: int
     maximum_snr: float | None
     event_rate_per_day: float
+    brightening_event_count: int
+    brightening_maximum_snr: float | None
+    brightening_rate_per_day: float
+    event_count_ratio: float
+    maximum_snr_difference: float | None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -44,6 +49,9 @@ class RealInjectionTrial:
     recovered_snr: float | None
     timing_error_days: float | None
     background_event_count: int
+    background_brightening_event_count: int
+    control_maximum_snr: float | None
+    snr_above_control: float | None
     novel_competing_events: int
 
     def to_dict(self) -> dict[str, object]:
@@ -63,6 +71,7 @@ class RealCompletenessCell:
     confidence_high: float
     median_timing_error_days: float | None
     median_recovered_snr: float | None
+    median_snr_above_control: float | None
     mean_novel_competing_events: float
 
     def to_dict(self) -> dict[str, object]:
@@ -148,27 +157,49 @@ def screen_real_lightcurve(
     flatten_window_days: float,
     min_snr: float,
     max_events: int = 200,
-) -> tuple[NullScreenResult, list[SingleTransitEvent]]:
-    """Run the detector before injection to record pre-existing real-data events."""
-    events = search_single_transits(
+) -> tuple[NullScreenResult, list[SingleTransitEvent], list[SingleTransitEvent]]:
+    """Record dimming events and a symmetric brightening-control population."""
+    dimming_events = search_single_transits(
         lc,
         durations=durations,
         flatten_window_days=flatten_window_days,
         min_snr=min_snr,
         max_events=max_events,
+        direction="dimming",
     )
-    maximum_snr = max((event.snr for event in events), default=None)
+    brightening_events = search_single_transits(
+        lc,
+        durations=durations,
+        flatten_window_days=flatten_window_days,
+        min_snr=min_snr,
+        max_events=max_events,
+        direction="brightening",
+    )
+    dimming_maximum = max((event.snr for event in dimming_events), default=None)
+    brightening_maximum = max((event.snr for event in brightening_events), default=None)
+    maximum_difference = None
+    if dimming_maximum is not None and brightening_maximum is not None:
+        maximum_difference = float(dimming_maximum - brightening_maximum)
+
+    baseline = max(lc.baseline, 1e-12)
     result = NullScreenResult(
         target=lc.target,
         sector_label=_sector_label(lc),
         cadences=len(lc.time),
         baseline_days=lc.baseline,
         median_cadence_minutes=lc.cadence * 24.0 * 60.0,
-        event_count=len(events),
-        maximum_snr=None if maximum_snr is None else float(maximum_snr),
-        event_rate_per_day=len(events) / max(lc.baseline, 1e-12),
+        event_count=len(dimming_events),
+        maximum_snr=None if dimming_maximum is None else float(dimming_maximum),
+        event_rate_per_day=len(dimming_events) / baseline,
+        brightening_event_count=len(brightening_events),
+        brightening_maximum_snr=(
+            None if brightening_maximum is None else float(brightening_maximum)
+        ),
+        brightening_rate_per_day=len(brightening_events) / baseline,
+        event_count_ratio=(len(dimming_events) + 1.0) / (len(brightening_events) + 1.0),
+        maximum_snr_difference=maximum_difference,
     )
-    return result, events
+    return result, dimming_events, brightening_events
 
 
 def run_real_injection_trial(
@@ -178,6 +209,7 @@ def run_real_injection_trial(
     duration_days: float,
     seed: int,
     background_events: Sequence[SingleTransitEvent],
+    brightening_control_events: Sequence[SingleTransitEvent],
     search_durations: tuple[float, ...],
     flatten_window_days: float,
     min_snr: float,
@@ -186,10 +218,11 @@ def run_real_injection_trial(
     if depth <= 0:
         raise ValueError("depth must be positive")
     normalized = lc.normalized()
+    excluded_events = [*background_events, *brightening_control_events]
     windows = _valid_injection_windows(
         normalized,
         duration_days=duration_days,
-        excluded_events=background_events,
+        excluded_events=excluded_events,
     )
     if not windows:
         raise RuntimeError(
@@ -224,6 +257,7 @@ def run_real_injection_trial(
         flatten_window_days=flatten_window_days,
         min_snr=min_snr,
         max_events=200,
+        direction="dimming",
     )
     tolerance = max(2.0 * injected.cadence, 0.65 * duration_days)
     nearby = [event for event in events if abs(event.center_time_days - center) <= tolerance]
@@ -236,6 +270,14 @@ def run_real_injection_trial(
         if any(_event_matches(event, reference) for reference in background_events):
             continue
         novel_competing += 1
+
+    control_maximum = max(
+        (event.snr for event in brightening_control_events),
+        default=None,
+    )
+    snr_above_control = None
+    if best is not None and control_maximum is not None:
+        snr_above_control = float(best.snr - control_maximum)
 
     return RealInjectionTrial(
         target=lc.target,
@@ -250,6 +292,9 @@ def run_real_injection_trial(
         recovered_snr=None if best is None else best.snr,
         timing_error_days=None if best is None else abs(best.center_time_days - center),
         background_event_count=len(background_events),
+        background_brightening_event_count=len(brightening_control_events),
+        control_maximum_snr=None if control_maximum is None else float(control_maximum),
+        snr_above_control=snr_above_control,
         novel_competing_events=novel_competing,
     )
 
@@ -270,6 +315,11 @@ def summarize_real_trials(trials: Iterable[RealInjectionTrial]) -> list[RealComp
             if trial.timing_error_days is not None
         ]
         snrs = [trial.recovered_snr for trial in recovered if trial.recovered_snr is not None]
+        margins = [
+            trial.snr_above_control
+            for trial in recovered
+            if trial.snr_above_control is not None
+        ]
         cells.append(
             RealCompletenessCell(
                 target=target,
@@ -283,6 +333,9 @@ def summarize_real_trials(trials: Iterable[RealInjectionTrial]) -> list[RealComp
                 confidence_high=high,
                 median_timing_error_days=None if not timing else float(np.median(timing)),
                 median_recovered_snr=None if not snrs else float(np.median(snrs)),
+                median_snr_above_control=(
+                    None if not margins else float(np.median(margins))
+                ),
                 mean_novel_competing_events=float(
                     np.mean([trial.novel_competing_events for trial in group])
                 ),
@@ -299,7 +352,13 @@ def run_real_lightcurve_campaign(
     seeds: Iterable[int] = range(4),
     min_snr: float = 5.0,
     flatten_window_days: float = 1.5,
-) -> tuple[NullScreenResult, list[SingleTransitEvent], list[RealInjectionTrial], list[RealCompletenessCell]]:
+) -> tuple[
+    NullScreenResult,
+    list[SingleTransitEvent],
+    list[SingleTransitEvent],
+    list[RealInjectionTrial],
+    list[RealCompletenessCell],
+]:
     durations = tuple(float(value) for value in durations_days)
     if not durations:
         raise ValueError("at least one duration is required")
@@ -313,7 +372,7 @@ def run_real_lightcurve_campaign(
             | {1.45 * duration for duration in durations}
         )
     )
-    null_screen, background_events = screen_real_lightcurve(
+    null_screen, background_events, brightening_control_events = screen_real_lightcurve(
         lc,
         durations=search_durations,
         flatten_window_days=flatten_window_days,
@@ -326,6 +385,7 @@ def run_real_lightcurve_campaign(
             duration_days=duration,
             seed=int(seed),
             background_events=background_events,
+            brightening_control_events=brightening_control_events,
             search_durations=search_durations,
             flatten_window_days=flatten_window_days,
             min_snr=min_snr,
@@ -334,7 +394,13 @@ def run_real_lightcurve_campaign(
         for duration in durations
         for seed in seeds
     ]
-    return null_screen, background_events, trials, summarize_real_trials(trials)
+    return (
+        null_screen,
+        background_events,
+        brightening_control_events,
+        trials,
+        summarize_real_trials(trials),
+    )
 
 
 def _write_csv(records: Sequence[object], path: Path) -> None:
@@ -351,6 +417,7 @@ def write_real_campaign_outputs(
     lc: LightCurve,
     null_screen: NullScreenResult,
     background_events: Sequence[SingleTransitEvent],
+    brightening_control_events: Sequence[SingleTransitEvent],
     trials: Sequence[RealInjectionTrial],
     cells: Sequence[RealCompletenessCell],
     output_dir: str | Path,
@@ -367,17 +434,29 @@ def write_real_campaign_outputs(
         "depths": sorted({trial.depth for trial in trials}),
         "durations_days": sorted({trial.duration_days for trial in trials}),
         "seeds": sorted({trial.seed for trial in trials}),
+        "controls": {
+            "dimming_events": len(background_events),
+            "brightening_events": len(brightening_control_events),
+            "brightening_maximum_snr": null_screen.brightening_maximum_snr,
+        },
         "important_caveat": (
-            "Pre-injection events are observational signals or systematics until vetted; "
-            "they are not automatically false alarms."
+            "Pre-injection dimming and brightening events are observational signals "
+            "or systematics until vetted; neither population is automatically a false alarm."
         ),
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (output / "null_screen.json").write_text(
         json.dumps(null_screen.to_dict(), indent=2), encoding="utf-8"
     )
-    (output / "background_events.json").write_text(
-        json.dumps([event.to_dict() for event in background_events], indent=2),
+    dimming_json = json.dumps(
+        [event.to_dict() for event in background_events], indent=2
+    )
+    (output / "background_events.json").write_text(dimming_json, encoding="utf-8")
+    (output / "background_dimming_events.json").write_text(
+        dimming_json, encoding="utf-8"
+    )
+    (output / "brightening_control_events.json").write_text(
+        json.dumps([event.to_dict() for event in brightening_control_events], indent=2),
         encoding="utf-8",
     )
     (output / "trials.json").write_text(
@@ -397,6 +476,7 @@ def write_real_campaign_outputs(
         f"<td>{100 * cell.completeness:.1f}%</td>"
         f"<td>{100 * cell.confidence_low:.1f}%–{100 * cell.confidence_high:.1f}%</td>"
         f"<td>{'' if cell.median_recovered_snr is None else f'{cell.median_recovered_snr:.2f}'}</td>"
+        f"<td>{'' if cell.median_snr_above_control is None else f'{cell.median_snr_above_control:.2f}'}</td>"
         f"<td>{cell.mean_novel_competing_events:.2f}</td>"
         "</tr>"
         for cell in cells
@@ -405,8 +485,8 @@ def write_real_campaign_outputs(
 <html lang=\"en\"><head><meta charset=\"utf-8\"><title>HOU-EARTH real-data calibration</title>
 <style>body{{font-family:system-ui;max-width:1100px;margin:40px auto;padding:0 20px}}table{{border-collapse:collapse;width:100%}}th,td{{padding:8px;border:1px solid #ccc;text-align:right}}</style></head>
 <body><h1>HOU-EARTH real TESS injection/recovery</h1>
-<p><strong>Target:</strong> {lc.target}; <strong>sectors:</strong> {_sector_label(lc)}; <strong>pre-injection events:</strong> {null_screen.event_count}.</p>
-<p>This is a calibration result, not an exoplanet discovery claim. Confidence ranges are 95% Wilson intervals.</p>
-<table><thead><tr><th>Depth</th><th>Duration (hours)</th><th>Recovered</th><th>Completeness</th><th>95% interval</th><th>Median SNR</th><th>Novel competing events</th></tr></thead><tbody>{rows}</tbody></table>
+<p><strong>Target:</strong> {lc.target}; <strong>sectors:</strong> {_sector_label(lc)}; <strong>pre-injection dimmings:</strong> {null_screen.event_count}; <strong>brightening controls:</strong> {null_screen.brightening_event_count}.</p>
+<p>This is a calibration result, not an exoplanet discovery claim. Confidence ranges are 95% Wilson intervals. “SNR above control” subtracts the strongest same-curve brightening-control event.</p>
+<table><thead><tr><th>Depth</th><th>Duration (hours)</th><th>Recovered</th><th>Completeness</th><th>95% interval</th><th>Median SNR</th><th>Median SNR above control</th><th>Novel competing events</th></tr></thead><tbody>{rows}</tbody></table>
 </body></html>"""
     (output / "report.html").write_text(html, encoding="utf-8")
