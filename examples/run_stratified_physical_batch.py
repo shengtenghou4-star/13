@@ -24,7 +24,7 @@ DEPTHS = (0.0001, 0.0002)
 DURATIONS_DAYS = (0.08, 0.16)
 IMPACT_PARAMETERS = (0.0, 0.6)
 INJECTION_SEEDS = range(4)
-SURROGATE_SEEDS = range(8)
+SURROGATE_SEEDS = range(32)
 
 
 def parse_sectors(value: str) -> int | list[int] | None:
@@ -57,7 +57,11 @@ def pooled_rows(
         magnitude, scatter, crowding, depth, duration, impact = key
         recovered = [trial for trial in group if trial.recovered]
         low, high = wilson_interval(len(recovered), len(group))
-        snrs = [trial.recovered_snr for trial in recovered if trial.recovered_snr is not None]
+        snrs = [
+            trial.recovered_snr
+            for trial in recovered
+            if trial.recovered_snr is not None
+        ]
         margins = [
             trial.snr_above_matched_control
             for trial in recovered
@@ -77,7 +81,9 @@ def pooled_rows(
                 "completeness": len(recovered) / len(group),
                 "confidence_low": low,
                 "confidence_high": high,
-                "median_recovered_snr": None if not snrs else float(np.median(snrs)),
+                "median_recovered_snr": (
+                    None if not snrs else float(np.median(snrs))
+                ),
                 "median_snr_above_matched_control": (
                     None if not margins else float(np.median(margins))
                 ),
@@ -122,10 +128,12 @@ for row in rows:
             json.dumps(null_screen.to_dict(), indent=2), encoding="utf-8"
         )
         (output / "background_dimming_events.json").write_text(
-            json.dumps([event.to_dict() for event in background], indent=2), encoding="utf-8"
+            json.dumps([event.to_dict() for event in background], indent=2),
+            encoding="utf-8",
         )
         (output / "background_brightening_events.json").write_text(
-            json.dumps([event.to_dict() for event in brightening], indent=2), encoding="utf-8"
+            json.dumps([event.to_dict() for event in brightening], indent=2),
+            encoding="utf-8",
         )
 
         stage = "red-noise-surrogates"
@@ -134,6 +142,7 @@ for row in rows:
             seeds=SURROGATE_SEEDS,
             block_days=0.5,
             durations=(0.04, 0.08, 0.16),
+            excluded_events=(*background, *brightening),
         )
         write_surrogate_outputs(surrogate_trials, surrogate_summary, output)
         all_trials.extend((trial, stratum) for trial in trials)
@@ -146,6 +155,7 @@ for row in rows:
                 "stratum": stratum.to_dict(),
                 "physical_trials": len(trials),
                 "physical_recovered": sum(trial.recovered for trial in trials),
+                "surrogate_trials": len(surrogate_trials),
                 "surrogate_summary": surrogate_summary.to_dict(),
             }
         )
@@ -159,7 +169,9 @@ for row in rows:
             "error_type": type(exc).__name__,
             "error": str(exc),
         }
-        (output / "failure.json").write_text(json.dumps(failure, indent=2), encoding="utf-8")
+        (output / "failure.json").write_text(
+            json.dumps(failure, indent=2), encoding="utf-8"
+        )
         status.append(failure)
 
 pooled = pooled_rows(all_trials)
@@ -167,6 +179,7 @@ summary = {
     "experiment": "HOU-EARTH stratified physical-transit and red-noise pilot",
     "status": "calibration; not a discovery search or survey completeness claim",
     "injection_model": "quadratic-limb-darkened small-planet approximation",
+    "surrogate_model": "event-neutralized circular moving-block bootstrap",
     "depths": DEPTHS,
     "durations_days": DURATIONS_DAYS,
     "impact_parameters": IMPACT_PARAMETERS,
@@ -175,6 +188,11 @@ summary = {
     "completed_targets": sum(item["status"] == "completed" for item in status),
     "failed_targets": sum(item["status"] == "failed" for item in status),
     "total_physical_trials": len(all_trials),
+    "total_surrogate_trials": sum(
+        int(item.get("surrogate_trials", 0))
+        for item in status
+        if item["status"] == "completed"
+    ),
     "pooled_stratum_cells": pooled,
     "targets": status,
 }
