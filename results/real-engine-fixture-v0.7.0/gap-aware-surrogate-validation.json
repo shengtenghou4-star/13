@@ -1,0 +1,42 @@
+{
+  "project": "HOU-EARTH",
+  "version": "0.7.0-development",
+  "date": "2026-07-22",
+  "status": "targeted reconstructed validation; not TESS flight-data evidence",
+  "method": "gap-aware-circular-moving-block-bootstrap",
+  "gap_factor": 3.5,
+  "targeted_results": {
+    "surrogate_algorithm_and_compatibility_tests": {
+      "passed": 10,
+      "failed": 0
+    },
+    "independent_gap_protocol_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "total": {
+      "passed": 15,
+      "failed": 0
+    }
+  },
+  "validated_properties": [
+    "large TESS-like gaps split the input into independent contiguous segments",
+    "moving blocks never transfer residual amplitude between low-noise and high-noise segments",
+    "flux uncertainties move with the same segment-local block indices as residuals",
+    "optional event neutralization uses only points from the same contiguous segment",
+    "every surrogate trial records the same positive segment count for fixed timestamps",
+    "gap-aware method name and gap factor are retained in target summaries",
+    "known transit-host skip policy remains compatible with surrogate significance calibration",
+    "the independent evidence gate rejects a wrong method, wrong gap factor, segment-count drift, non-integral trial counts, or fewer than two completed null targets"
+  ],
+  "scientific_defect_corrected": {
+    "issue": "the earlier bootstrap sampled the stitched light curve by global array index and could draw a moving block across a downlink, quality-cut, or inter-product gap",
+    "risk": "the null distribution could contain covariance transitions never observed continuously and could move one segment's uncertainty regime into another",
+    "correction": "split at time gaps greater than 3.5 times the median cadence, estimate segment-specific baselines, bootstrap every segment independently, and move residuals and flux_err together"
+  },
+  "limitations": [
+    "The 3.5-cadence split and 0.5-day block length are transparent pilot choices, not universal constants.",
+    "The targeted fixtures validate segment isolation but do not replace the queued six-target TESS campaign.",
+    "The full repository test suite and externally hosted real-data evidence remain merge gates."
+  ]
+}

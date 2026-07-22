@@ -1,0 +1,45 @@
+{
+  "project": "HOU-EARTH",
+  "version": "0.7.0-development",
+  "date": "2026-07-22",
+  "status": "targeted deterministic provenance validation; not TESS flight-data evidence",
+  "schema": "houearth-canonical-float64-le-v1",
+  "validated_checks": [
+    "little-endian and big-endian float arrays produce the same canonical hash",
+    "distinct IEEE-754 NaN payloads produce the same canonical hash",
+    "array shape and individual numeric values change the hash",
+    "JSON object key order does not change metadata hashes",
+    "missing flux uncertainty is committed through an explicit sentinel",
+    "campaign-input hashes are computed after LightCurve finite-value filtering, positive-uncertainty filtering, and time sorting"
+  ],
+  "targeted_result": {
+    "passed": 6,
+    "failed": 0
+  },
+  "post_construction_fixture": {
+    "input_cadences": 24,
+    "retained_campaign_input_cadences": 22,
+    "input_conditions": [
+      "descending timestamps",
+      "one NaN flux",
+      "one zero uncertainty"
+    ],
+    "observed_behavior": [
+      "non-finite and invalid-uncertainty rows removed",
+      "retained timestamps strictly increasing",
+      "stored campaign-input hash equals a fresh hash of constructed arrays",
+      "stored campaign-input hash differs from the pre-construction temporary-array hash"
+    ]
+  },
+  "evidence_fields": [
+    "campaign_input_hash_schema",
+    "campaign_input_combined_sha256",
+    "product_provenance_sha256",
+    "query_provenance_sha256"
+  ],
+  "limitations": [
+    "The validation uses deterministic fixtures, not downloaded TESS products.",
+    "Hash equality proves identity under the declared canonicalization, not scientific correctness.",
+    "The full repository CI and six-target TESS workflow remain required before merge."
+  ]
+}

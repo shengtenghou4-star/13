@@ -1,0 +1,7 @@
+target_id,query,author,sectors,max_products,intended_role,surrogate_policy,notes
+hd-10700,HD 10700,SPOC,,1,bright-low-scatter,unmasked-null,"Bright-star reference; no confirmed transiting system used in the pilot null analysis"
+hd-20794,HD 20794,SPOC,,1,bright-reference,unmasked-null,"Bright-star reference; no confirmed transiting system used in the pilot null analysis"
+hd-69830,HD 69830,SPOC,,1,bright-harder-background,unmasked-null,"Known radial-velocity planets but no confirmed transiting system used in the pilot null analysis"
+au-mic,AU Mic,SPOC,,1,bright-active,skip-known-transits,"Young active known transiting system; physical injection only in this pilot"
+toi-700,TOI 700,SPOC,,1,mid-magnitude-m-dwarf,skip-known-transits,"Known multi-transiting system; physical injection only in this pilot"
+lhs-3844,LHS 3844,SPOC,,1,faint-m-dwarf,skip-known-transits,"Known transiting system; physical injection only in this pilot"

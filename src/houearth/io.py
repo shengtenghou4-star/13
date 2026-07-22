@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 
 from .core import LightCurve
+from .provenance import canonical_json_sha256, lightcurve_array_hashes
 
 
 def _json_scalar(value: Any) -> Any:
@@ -22,6 +23,36 @@ def _json_scalar(value: Any) -> Any:
     return str(value)
 
 
+def _fingerprinted_lightcurve(
+    time: np.ndarray,
+    flux: np.ndarray,
+    flux_err: np.ndarray | None,
+    *,
+    target: str,
+    metadata: dict[str, Any],
+) -> LightCurve:
+    """Construct first, then fingerprint the cleaned campaign-input arrays."""
+    prepared = LightCurve(
+        time,
+        flux,
+        flux_err,
+        target=target,
+        metadata=metadata,
+    )
+    array_hashes = lightcurve_array_hashes(
+        prepared.time,
+        prepared.flux,
+        prepared.flux_err,
+    )
+    return LightCurve(
+        prepared.time,
+        prepared.flux,
+        prepared.flux_err,
+        target=prepared.target,
+        metadata={**prepared.metadata, "campaign_input_array_hashes": array_hashes},
+    )
+
+
 def download_tess_lightcurve(
     target: str,
     *,
@@ -29,7 +60,7 @@ def download_tess_lightcurve(
     sector: int | list[int] | None = None,
     max_products: int | None = None,
 ) -> LightCurve:
-    """Download and stitch public TESS light curves through Lightkurve/MAST."""
+    """Download, stitch, and fingerprint public TESS light curves."""
     try:
         import lightkurve as lk
     except ImportError as exc:  # pragma: no cover - optional dependency
@@ -107,20 +138,32 @@ def download_tess_lightcurve(
             product.setdefault("sector", int(getattr(curve, "sector")))
         products.append(product)
 
-    return LightCurve(
+    query_provenance = {
+        "target": target,
+        "author_filter_requested": author,
+        "author_filter_used": author_used,
+        "sector_requested": sector,
+        "max_products": max_products,
+        "sectors_downloaded": sectors,
+        "product_provenance": products,
+    }
+    metadata = {
+        "source": "MAST/TESS via Lightkurve",
+        "author_filter_requested": author,
+        "author_filter_used": author_used,
+        "sectors": sectors,
+        "products": len(collection),
+        "product_provenance": products,
+        "product_provenance_sha256": canonical_json_sha256(products),
+        "query_provenance_sha256": canonical_json_sha256(query_provenance),
+        "max_products": max_products,
+    }
+    return _fingerprinted_lightcurve(
         time,
         flux,
         flux_err,
         target=target,
-        metadata={
-            "source": "MAST/TESS via Lightkurve",
-            "author_filter_requested": author,
-            "author_filter_used": author_used,
-            "sectors": sectors,
-            "products": len(collection),
-            "product_provenance": products,
-            "max_products": max_products,
-        },
+        metadata=metadata,
     )
 
 

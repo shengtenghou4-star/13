@@ -1,0 +1,7 @@
+target_id,target,archive_review_date,known_planet_detection_method,confirmed_transiting_system_in_archive,pilot_surrogate_policy,qualification,caveat
+hd-10700,Tau Ceti,2026-07-22,Radial Velocity,no,unmasked-null,"Eligible as a no-confirmed-transit pilot background","Multiple radial-velocity signals are controversial or revised; this is not a planet-free or certified event-free star"
+hd-20794,HD 20794,2026-07-22,Radial Velocity,no,unmasked-null,"Eligible as a no-confirmed-transit pilot background","The planetary architecture has been revised; all listed confirmed planets used for this audit are radial-velocity detections"
+hd-69830,HD 69830,2026-07-22,Radial Velocity,no,unmasked-null,"Eligible as a no-confirmed-transit pilot background","Hosts three confirmed radial-velocity planets and is not claimed to be astrophysically quiet or event-free"
+au-mic,AU Mic,2026-07-22,Transit,yes,skip-known-transits,"Physical-injection background only","Excluded from no-event surrogate inference"
+toi-700,TOI 700,2026-07-22,Transit,yes,skip-known-transits,"Physical-injection background only","Excluded from no-event surrogate inference"
+lhs-3844,LHS 3844,2026-07-22,Transit,yes,skip-known-transits,"Physical-injection background only","Excluded from no-event surrogate inference"

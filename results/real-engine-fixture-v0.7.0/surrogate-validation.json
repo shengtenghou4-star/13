@@ -1,0 +1,70 @@
+{
+  "project": "HOU-EARTH",
+  "version": "0.7.0-development",
+  "date": "2026-07-22",
+  "status": "targeted synthetic correlated-noise validation; not TESS flight-data evidence",
+  "validated_components": [
+    "event-neutralized circular moving-block bootstrap",
+    "no default residual sign flipping",
+    "unconditional full-search maximum-SNR distribution",
+    "add-one empirical familywise p-values",
+    "recovery versus empirically significant recovery separation"
+  ],
+  "test_results": {
+    "surrogate_regressions": {
+      "passed": 3,
+      "failed": 0,
+      "elapsed_seconds": 0.27
+    },
+    "combined_surrogate_and_significance": {
+      "passed": 6,
+      "failed": 0,
+      "elapsed_seconds": 0.18
+    }
+  },
+  "correlated_noise_benchmark": {
+    "baseline_days": 27.0,
+    "cadence_minutes": 2.0,
+    "cadences": 19440,
+    "surrogate_trials": 64,
+    "block_days": 0.5,
+    "elapsed_seconds": 15.675733772000058,
+    "seconds_per_trial": 0.2449333401875009,
+    "surrogate_to_source_scatter_ratio": {
+      "median": 0.9944280026194234,
+      "minimum": 0.9608752490003816,
+      "maximum": 1.041340699530382
+    },
+    "nominal_five_sigma_exceedance_rate": {
+      "dimming": 1.0,
+      "brightening": 1.0
+    },
+    "dimming_full_search_maximum_snr": {
+      "median": 13.322351316523353,
+      "p90": 15.120476749717575,
+      "p95": 16.226939218082425,
+      "maximum": 16.837975947757506
+    },
+    "brightening_full_search_maximum_snr": {
+      "median": 14.717859318486862,
+      "p95": 17.47144204748295
+    }
+  },
+  "interpretation": [
+    "The moving-block bootstrap preserved the fixture scatter distribution without forcing dimming/brightening symmetry.",
+    "A nominal white-noise five-sigma threshold was exceeded in every correlated-noise surrogate, demonstrating that raw detector SNR is not a calibrated false-alarm probability.",
+    "HOU-EARTH now compares recovered signals with per-target full-search surrogate maxima using an add-one finite-sample p-value.",
+    "With 64 null trials the minimum resolvable empirical p-value is 1/65 = 0.015384615384615385; the pilot supports a 0.05 screen but not a 0.01 claim."
+  ],
+  "pilot_null_policy": {
+    "unmasked_null_targets": ["HD 10700", "HD 20794", "HD 69830"],
+    "known_transit_hosts_excluded_from_null_sample": ["AU Mic", "TOI 700", "LHS 3844"],
+    "reason": "Known transit hosts remain valid physical-injection backgrounds but are not represented as no-event surrogate controls. Unmasked null targets retain real stellar and instrumental excursions rather than optimistically removing every detected event."
+  },
+  "limitations": [
+    "The benchmark is synthetic correlated noise, not TESS flight data.",
+    "The injected correlation process is one AR-like fixture and does not span TESS systematics.",
+    "The three pilot null targets are not certified signal-free; their surrogates estimate an empirical background under the stated policy.",
+    "Full repository CI and the six-target TESS workflow were still queued without a hosted runner at the time this manifest was frozen."
+  ]
+}
