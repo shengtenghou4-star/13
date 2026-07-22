@@ -4,9 +4,12 @@ import math
 from dataclasses import asdict, dataclass
 from typing import Mapping, Sequence
 
+from .surrogates import DEFAULT_GAP_FACTOR, GAP_AWARE_METHOD
 
-SURROGATE_METHOD = "gap-aware-circular-moving-block-bootstrap"
-SURROGATE_GAP_FACTOR = 3.5
+
+# Backward-compatible public protocol names, sourced from the implementation.
+SURROGATE_METHOD = GAP_AWARE_METHOD
+SURROGATE_GAP_FACTOR = DEFAULT_GAP_FACTOR
 
 
 @dataclass(frozen=True)
