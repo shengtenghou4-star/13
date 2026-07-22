@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from datetime import datetime
 from numbers import Real
 from typing import Mapping, Sequence
@@ -13,6 +13,8 @@ from .candidate_freeze import (
     SELECTION_RULE,
     TABLE_FDR_ALPHA,
     TARGET_FAMILYWISE_ALPHA,
+    FrozenCandidateRecord,
+    FrozenCandidateTable,
     benjamini_hochberg_qvalues,
 )
 from .provenance import canonical_json_sha256
@@ -22,6 +24,8 @@ _CANDIDATE_ID_PATTERN = re.compile(r"^hou-[0-9a-f]{24}$")
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _GIT_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 _UTC_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+_TABLE_FIELDS = frozenset(field.name for field in fields(FrozenCandidateTable))
+_RECORD_FIELDS = frozenset(field.name for field in fields(FrozenCandidateRecord))
 
 
 @dataclass(frozen=True)
@@ -141,11 +145,33 @@ def _expected_reasons(
     return tuple(reasons)
 
 
+def _schema_difference(
+    actual_keys: object,
+    expected_keys: frozenset[str],
+) -> tuple[list[str], list[str]]:
+    actual = {key for key in actual_keys if isinstance(key, str)}
+    non_string = [repr(key) for key in actual_keys if not isinstance(key, str)]
+    missing = sorted(expected_keys - actual)
+    extra = sorted(actual - expected_keys) + non_string
+    return missing, extra
+
+
 def validate_frozen_candidate_table(
     payload: Mapping[str, object],
 ) -> CandidateProtocolValidationReport:
-    """Recompute all frozen candidate-table invariants from serialized evidence."""
+    """Recompute all frozen candidate-table invariants from serialized evidence.
+
+    The schema is closed: undeclared top-level or row fields are rejected so human
+    annotations, catalogue labels, and ad hoc priority scores cannot be smuggled into a
+    supposedly blind table even when the payload is rehashed.
+    """
     errors: list[str] = []
+    missing_top, extra_top = _schema_difference(payload.keys(), _TABLE_FIELDS)
+    if missing_top:
+        errors.append(f"candidate table is missing fields: {', '.join(missing_top)}")
+    if extra_top:
+        errors.append(f"candidate table contains undeclared fields: {', '.join(extra_top)}")
+
     if payload.get("schema") != CANDIDATE_SCHEMA:
         errors.append("candidate schema is missing or inconsistent")
 
@@ -172,17 +198,20 @@ def validate_frozen_candidate_table(
     if payload.get("ranking_rule") != RANKING_RULE:
         errors.append("ranking_rule is missing or inconsistent")
 
-    candidate_value = payload.get("candidates", [])
-    if isinstance(candidate_value, Sequence) and not isinstance(
-        candidate_value, (str, bytes)
-    ):
-        candidate_items = list(candidate_value)
-        candidates = [item for item in candidate_items if isinstance(item, Mapping)]
-        if len(candidates) != len(candidate_items):
-            errors.append("candidates contains malformed non-object entries")
+    if "candidates" not in payload:
+        candidates: list[Mapping[str, object]] = []
     else:
-        candidates = []
-        errors.append("candidates is missing or malformed")
+        candidate_value = payload.get("candidates")
+        if isinstance(candidate_value, Sequence) and not isinstance(
+            candidate_value, (str, bytes)
+        ):
+            candidate_items = list(candidate_value)
+            candidates = [item for item in candidate_items if isinstance(item, Mapping)]
+            if len(candidates) != len(candidate_items):
+                errors.append("candidates contains malformed non-object entries")
+        else:
+            candidates = []
+            errors.append("candidates is malformed")
 
     candidate_ids: set[str] = set()
     campaign_keys: set[tuple[str, str]] = set()
@@ -192,6 +221,12 @@ def validate_frozen_candidate_table(
 
     for index, record in enumerate(candidates, start=1):
         label = str(record.get("candidate_id", f"candidate-{index}"))
+        missing_row, extra_row = _schema_difference(record.keys(), _RECORD_FIELDS)
+        if missing_row:
+            errors.append(f"{label}: row is missing fields: {', '.join(missing_row)}")
+        if extra_row:
+            errors.append(f"{label}: row contains undeclared fields: {', '.join(extra_row)}")
+
         candidate_id = record.get("candidate_id")
         if not isinstance(candidate_id, str) or _CANDIDATE_ID_PATTERN.fullmatch(
             candidate_id
