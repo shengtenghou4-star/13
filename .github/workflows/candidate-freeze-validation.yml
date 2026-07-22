@@ -7,6 +7,7 @@ on:
       - ".github/workflows/candidate-freeze-validation.yml"
       - "docs/PHASE0_8_FROZEN_CANDIDATE_PROTOCOL.md"
       - "examples/run_candidate_freeze_fixture.py"
+      - "examples/validate_candidate_evidence.py"
       - "examples/validate_frozen_candidate_table.py"
       - "pyproject.toml"
       - "src/houearth/**"
@@ -18,6 +19,7 @@ on:
       - ".github/workflows/candidate-freeze-validation.yml"
       - "docs/PHASE0_8_FROZEN_CANDIDATE_PROTOCOL.md"
       - "examples/run_candidate_freeze_fixture.py"
+      - "examples/validate_candidate_evidence.py"
       - "examples/validate_frozen_candidate_table.py"
       - "pyproject.toml"
       - "src/houearth/**"
@@ -54,16 +56,21 @@ jobs:
           else
             echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
           fi
-      - name: Generate deterministic frozen table fixture
+      - name: Generate deterministic complete candidate evidence fixture
         run: >-
           python examples/run_candidate_freeze_fixture.py
           --source-commit "${{ steps.source.outputs.sha }}"
           --output outputs/candidate-freeze-fixture-v0.8
-      - name: Independently validate serialized table
+      - name: Independently validate serialized candidate table
         run: >-
           python examples/validate_frozen_candidate_table.py
           outputs/candidate-freeze-fixture-v0.8/candidate_table.json
-          --report outputs/candidate-freeze-fixture-v0.8/second_validation_report.json
+          --report outputs/candidate-freeze-fixture-v0.8/second_table_validation_report.json
+      - name: Independently validate complete serialized event evidence
+        run: >-
+          python examples/validate_candidate_evidence.py
+          outputs/candidate-freeze-fixture-v0.8/candidate_evidence.json
+          --report outputs/candidate-freeze-fixture-v0.8/second_evidence_validation_report.json
       - name: Record validated commit
         run: echo "${{ steps.source.outputs.sha }}" > outputs/candidate-freeze-fixture-v0.8/validated_commit.txt
       - uses: actions/upload-artifact@v4
