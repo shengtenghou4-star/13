@@ -65,24 +65,42 @@ class LightCurve:
             metadata={**self.metadata, "normalized": True},
         )
 
-    def sigma_clipped(self, sigma: float = 8.0) -> "LightCurve":
-        """Remove only extreme positive/negative artifacts.
+    def sigma_clipped(
+        self,
+        sigma: float = 8.0,
+        *,
+        clip_negative: bool = False,
+    ) -> "LightCurve":
+        """Remove extreme positive artifacts while preserving transit-like dips.
 
-        The default is deliberately loose so genuine transit points survive.
+        Transit searches must not discard deep negative excursions merely because a
+        bright star has very low scatter. Set ``clip_negative=True`` only for
+        non-transit workflows that explicitly want symmetric clipping.
         """
+        if sigma <= 0:
+            raise ValueError("sigma must be positive")
         med = np.nanmedian(self.flux)
         mad = np.nanmedian(np.abs(self.flux - med))
         robust_sigma = 1.4826 * mad
         if not np.isfinite(robust_sigma) or robust_sigma == 0:
             return self
-        keep = np.abs(self.flux - med) <= sigma * robust_sigma
+        delta = self.flux - med
+        keep = delta <= sigma * robust_sigma
+        if clip_negative:
+            keep &= delta >= -sigma * robust_sigma
+        if keep.sum() < 20:
+            return self
         err = None if self.flux_err is None else self.flux_err[keep]
         return LightCurve(
             self.time[keep],
             self.flux[keep],
             err,
             target=self.target,
-            metadata={**self.metadata, "sigma_clip": sigma},
+            metadata={
+                **self.metadata,
+                "sigma_clip": sigma,
+                "clip_negative": clip_negative,
+            },
         )
 
     def to_dict(self) -> dict[str, Any]:
