@@ -69,13 +69,14 @@ class LightCurve:
         self,
         sigma: float = 8.0,
         *,
+        clip_positive: bool = True,
         clip_negative: bool = False,
     ) -> "LightCurve":
-        """Remove extreme positive artifacts while preserving transit-like dips.
+        """Remove selected extreme excursions without silently deleting transits.
 
-        Transit searches must not discard deep negative excursions merely because a
-        bright star has very low scatter. Set ``clip_negative=True`` only for
-        non-transit workflows that explicitly want symmetric clipping.
+        Dimming searches normally clip positive artifacts only. Brightening-control
+        searches use the mirror configuration so both directions receive symmetric
+        preprocessing.
         """
         if sigma <= 0:
             raise ValueError("sigma must be positive")
@@ -85,7 +86,9 @@ class LightCurve:
         if not np.isfinite(robust_sigma) or robust_sigma == 0:
             return self
         delta = self.flux - med
-        keep = delta <= sigma * robust_sigma
+        keep = np.ones(len(self.flux), dtype=bool)
+        if clip_positive:
+            keep &= delta <= sigma * robust_sigma
         if clip_negative:
             keep &= delta >= -sigma * robust_sigma
         if keep.sum() < 20:
@@ -99,6 +102,7 @@ class LightCurve:
             metadata={
                 **self.metadata,
                 "sigma_clip": sigma,
+                "clip_positive": clip_positive,
                 "clip_negative": clip_negative,
             },
         )
@@ -138,6 +142,7 @@ class SingleTransitEvent:
     depth: float
     snr: float
     local_points: int
+    direction: str = "dimming"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
