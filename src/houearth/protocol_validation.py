@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass
 from typing import Mapping, Sequence
 
@@ -40,7 +41,7 @@ def _safe_float(value: object) -> float | None:
         parsed = float(value)
     except (TypeError, ValueError, OverflowError):
         return None
-    return parsed
+    return parsed if math.isfinite(parsed) else None
 
 
 def validate_phase07_summary(
@@ -53,12 +54,16 @@ def validate_phase07_summary(
 ) -> ProtocolValidationReport:
     """Validate a Phase 0.7 evidence summary without discarding partial results."""
     targets_value = summary.get("targets", [])
-    if not isinstance(targets_value, Sequence) or isinstance(
+    malformed_targets = False
+    if isinstance(targets_value, Sequence) and not isinstance(
         targets_value, (str, bytes)
     ):
-        targets: list[Mapping[str, object]] = []
+        target_items = list(targets_value)
+        targets = [item for item in target_items if isinstance(item, Mapping)]
+        malformed_targets = len(targets) != len(target_items)
     else:
-        targets = [item for item in targets_value if isinstance(item, Mapping)]
+        targets = []
+        malformed_targets = targets_value not in (None, [], ())
 
     completed = [item for item in targets if item.get("status") == "completed"]
     completed_null = [
@@ -75,7 +80,7 @@ def validate_phase07_summary(
     )
     errors: list[str] = []
 
-    if len(targets) != len(targets_value) if isinstance(targets_value, Sequence) and not isinstance(targets_value, (str, bytes)) else bool(targets_value):
+    if malformed_targets:
         errors.append("targets contains malformed non-object entries")
     if len(completed) < minimum_completed_targets:
         errors.append(
@@ -94,6 +99,7 @@ def validate_phase07_summary(
             errors.append(
                 f"{target_id}: physical trials {count} != {physical_trials_per_target}"
             )
+
         policy = item.get("surrogate_policy")
         surrogate_count = _safe_int(item.get("surrogate_trials"))
         surrogate_value = item.get("surrogate_summary")
@@ -101,6 +107,7 @@ def validate_phase07_summary(
         surrogate_status = surrogate_summary.get("status")
         if not isinstance(surrogate_value, Mapping):
             errors.append(f"{target_id}: surrogate summary is missing or malformed")
+
         if policy == "unmasked-null":
             if surrogate_status != "completed":
                 errors.append(f"{target_id}: null campaign not completed")
