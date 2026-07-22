@@ -10,6 +10,7 @@ from houearth.candidate_evidence import (
     write_candidate_evidence,
 )
 from houearth.candidate_freeze import BlindCandidateInput
+from houearth.candidate_protocol_validation import validate_frozen_candidate_table
 
 
 SEARCH_DURATIONS = (0.052, 0.08, 0.104, 0.116, 0.16, 0.232)
@@ -99,9 +100,7 @@ def main() -> int:
         frozen_at_utc="2026-07-22T10:00:00Z",
     )
     write_candidate_evidence(evidence, args.output)
-    table_report = __import__(
-        "houearth.candidate_protocol_validation", fromlist=["validate_frozen_candidate_table"]
-    ).validate_frozen_candidate_table(evidence.candidate_table.to_dict())
+    table_report = validate_frozen_candidate_table(evidence.candidate_table.to_dict())
     evidence_report = validate_candidate_evidence(evidence.to_dict())
     (args.output / "candidate_validation_report.json").write_text(
         json.dumps(table_report.to_dict(), indent=2), encoding="utf-8"
