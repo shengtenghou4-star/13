@@ -1,0 +1,9 @@
+{
+  "protocol": "HOU-EARTH Phase 0.7 stratified physical pilot",
+  "accepted": true,
+  "completed_targets": 6,
+  "completed_null_targets": 3,
+  "physical_trials": 192,
+  "surrogate_trials": 192,
+  "errors": []
+}
