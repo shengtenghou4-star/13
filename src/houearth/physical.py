@@ -11,11 +11,7 @@ def _validate_limb_darkening(u1: float, u2: float) -> None:
 
 
 def circle_overlap_area(separation: np.ndarray, radius_ratio: float) -> np.ndarray:
-    """Area shared by a unit stellar disk and a planet disk.
-
-    The planet radius is expressed in stellar-radius units. The implementation is
-    vectorized and exact for two uniform disks; limb darkening is applied separately.
-    """
+    """Area shared by a unit stellar disk and a planet disk."""
     if not 0 < radius_ratio < 1:
         raise ValueError("radius_ratio must be in (0, 1)")
 
@@ -62,11 +58,11 @@ def physical_single_transit_decrement(
     u1: float = 0.35,
     u2: float = 0.25,
 ) -> np.ndarray:
-    """Approximate a quadratic-limb-darkened single transit.
+    """Instantaneous quadratic-limb-darkened single-transit decrement.
 
     ``duration`` is first-to-fourth contact duration. The overlap geometry is exact;
-    the occulted intensity is evaluated at the planet-center position, which is a
-    controlled small-planet approximation suitable for injection/recovery tests.
+    occulted intensity is evaluated at the planet-center position, a controlled
+    small-planet approximation for injection/recovery calibration.
     """
     if duration <= 0:
         raise ValueError("duration must be positive")
@@ -87,6 +83,53 @@ def physical_single_transit_decrement(
     return overlap * local_intensity / disk_mean_intensity
 
 
+def exposure_averaged_single_transit_decrement(
+    time: np.ndarray,
+    *,
+    center: float,
+    duration: float,
+    radius_ratio: float,
+    exposure_days: float,
+    supersample: int = 7,
+    impact_parameter: float = 0.3,
+    u1: float = 0.35,
+    u2: float = 0.25,
+) -> np.ndarray:
+    """Average the physical model over each finite exposure.
+
+    Sub-exposure midpoint sampling avoids overweighting exposure boundaries. A value of
+    one reproduces the instantaneous model at the cadence timestamp.
+    """
+    if exposure_days < 0:
+        raise ValueError("exposure_days must be non-negative")
+    if not isinstance(supersample, int) or supersample < 1:
+        raise ValueError("supersample must be a positive integer")
+    time = np.asarray(time, dtype=float)
+    if exposure_days == 0 or supersample == 1:
+        return physical_single_transit_decrement(
+            time,
+            center=center,
+            duration=duration,
+            radius_ratio=radius_ratio,
+            impact_parameter=impact_parameter,
+            u1=u1,
+            u2=u2,
+        )
+
+    fractional_midpoints = (np.arange(supersample, dtype=float) + 0.5) / supersample - 0.5
+    sample_times = time[..., None] + exposure_days * fractional_midpoints
+    samples = physical_single_transit_decrement(
+        sample_times,
+        center=center,
+        duration=duration,
+        radius_ratio=radius_ratio,
+        impact_parameter=impact_parameter,
+        u1=u1,
+        u2=u2,
+    )
+    return np.mean(samples, axis=-1)
+
+
 def radius_ratio_for_midpoint_depth(
     depth: float,
     *,
@@ -94,7 +137,7 @@ def radius_ratio_for_midpoint_depth(
     u1: float = 0.35,
     u2: float = 0.25,
 ) -> float:
-    """Invert the approximate model so its midpoint depth matches ``depth``."""
+    """Invert the instantaneous model so its intrinsic midpoint depth matches depth."""
     if not 0 < depth < 0.25:
         raise ValueError("depth must be in (0, 0.25)")
     _validate_limb_darkening(u1, u2)
@@ -130,19 +173,30 @@ def inject_physical_single_transit(
     impact_parameter: float = 0.3,
     u1: float = 0.35,
     u2: float = 0.25,
+    exposure_days: float | None = None,
+    supersample: int = 7,
 ) -> tuple[np.ndarray, float]:
-    """Inject a physical single transit and return flux plus inferred radius ratio."""
+    """Inject an exposure-averaged physical transit and return its radius ratio."""
+    time = np.asarray(time, dtype=float)
     radius_ratio = radius_ratio_for_midpoint_depth(
         depth,
         impact_parameter=impact_parameter,
         u1=u1,
         u2=u2,
     )
-    decrement = physical_single_transit_decrement(
+    if exposure_days is None:
+        exposure_days = (
+            0.0
+            if len(time) < 2
+            else float(np.nanmedian(np.diff(np.sort(time))))
+        )
+    decrement = exposure_averaged_single_transit_decrement(
         time,
         center=center,
         duration=duration,
         radius_ratio=radius_ratio,
+        exposure_days=exposure_days,
+        supersample=supersample,
         impact_parameter=impact_parameter,
         u1=u1,
         u2=u2,
