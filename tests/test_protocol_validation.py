@@ -4,10 +4,17 @@ from houearth.protocol_validation import (
     ProtocolValidationError,
     validate_phase07_summary,
 )
+from houearth.provenance import HASH_SCHEMA
 from houearth.search_grids import physical_single_event_search_durations
 
 
 SEARCH_DURATIONS = physical_single_event_search_durations((0.08, 0.16))
+VALID_STRATUM = {
+    "array_hash_schema": HASH_SCHEMA,
+    "analyzed_combined_sha256": "a" * 64,
+    "product_provenance_sha256": "b" * 64,
+    "query_provenance_sha256": "c" * 64,
+}
 
 
 def target(target_id: str, policy: str, *, completed: bool = True) -> dict[str, object]:
@@ -20,6 +27,7 @@ def target(target_id: str, policy: str, *, completed: bool = True) -> dict[str, 
         "target_id": target_id,
         "status": "completed" if completed else "failed",
         "surrogate_policy": policy,
+        "stratum": dict(VALID_STRATUM),
         "physical_trials": 32 if completed else 0,
         "surrogate_trials": surrogate_count if completed else 0,
         "surrogate_summary": surrogate_summary,
@@ -148,3 +156,14 @@ def test_mismatched_root_search_family_is_rejected() -> None:
         "root search-duration family is missing or inconsistent" in error
         for error in captured.value.report.errors
     )
+
+
+def test_missing_or_invalid_data_fingerprints_are_rejected() -> None:
+    summary = valid_summary()
+    summary["targets"][0]["stratum"]["analyzed_combined_sha256"] = "not-a-hash"
+    summary["targets"][1]["stratum"]["array_hash_schema"] = "wrong-schema"
+    with pytest.raises(ProtocolValidationError) as captured:
+        validate_phase07_summary(summary)
+    errors = captured.value.report.errors
+    assert any("analyzed_combined_sha256 is missing or invalid" in error for error in errors)
+    assert any("analyzed-array hash schema is inconsistent" in error for error in errors)
