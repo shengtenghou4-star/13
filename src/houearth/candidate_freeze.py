@@ -5,6 +5,8 @@ import math
 import re
 from collections import defaultdict
 from dataclasses import asdict, dataclass
+from datetime import datetime
+from numbers import Real
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -12,8 +14,21 @@ from .provenance import canonical_json_sha256
 
 
 CANDIDATE_SCHEMA = "houearth-frozen-candidate-table-v0.8.0"
+TARGET_FAMILYWISE_ALPHA = 0.05
+TABLE_FDR_ALPHA = 0.10
+SELECTION_RULE = (
+    "one event per (target_id,campaign_input_sha256), selected by ascending "
+    "target-familywise p, descending matched-control margin, descending SNR, "
+    "descending depth, ascending time and source index"
+)
+RANKING_RULE = (
+    "screened-in first; then ascending BH q and familywise p, descending "
+    "matched-control margin and SNR, then deterministic target/time ties"
+)
+
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _GIT_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+_UTC_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 
 @dataclass(frozen=True)
@@ -83,15 +98,40 @@ class FrozenCandidateTable:
         return asdict(self)
 
 
+def _finite_number(value: object, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise ValueError(f"{name} must be a real number, not boolean or text")
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError(f"{name} must be finite")
+    return parsed
+
+
+def _nonempty_string(value: object, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be a non-empty string")
+    return value
+
+
+def _validate_utc_timestamp(value: object) -> str:
+    if not isinstance(value, str) or _UTC_PATTERN.fullmatch(value) is None:
+        raise ValueError("frozen_at_utc must use YYYY-MM-DDTHH:MM:SSZ")
+    try:
+        datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError as exc:
+        raise ValueError("frozen_at_utc is not a valid UTC timestamp") from exc
+    return value
+
+
 def benjamini_hochberg_qvalues(p_values: Sequence[float]) -> list[float]:
     """Return monotone Benjamini-Hochberg adjusted q-values.
 
     Inputs are target-level familywise p-values. HOU-EARTH applies this only after
     reducing each campaign-input light curve to one predeclared top dimming event.
     """
-    values = [float(value) for value in p_values]
-    if any(not math.isfinite(value) or value < 0 or value > 1 for value in values):
-        raise ValueError("p-values must be finite and lie in [0, 1]")
+    values = [_finite_number(value, "p-value") for value in p_values]
+    if any(value < 0 or value > 1 for value in values):
+        raise ValueError("p-values must lie in [0, 1]")
     count = len(values)
     if count == 0:
         return []
@@ -108,37 +148,42 @@ def benjamini_hochberg_qvalues(p_values: Sequence[float]) -> list[float]:
 
 
 def _validated_duration_family(event: BlindCandidateInput) -> tuple[float, ...]:
-    durations = tuple(float(value) for value in event.search_duration_family_days)
-    if not durations or any(not math.isfinite(value) or value <= 0 for value in durations):
-        raise ValueError("search_duration_family_days must contain positive finite values")
+    if not isinstance(event.search_duration_family_days, Sequence) or isinstance(
+        event.search_duration_family_days, (str, bytes)
+    ):
+        raise ValueError("search_duration_family_days must be a numeric sequence")
+    durations = tuple(
+        _finite_number(value, "search duration")
+        for value in event.search_duration_family_days
+    )
+    if not durations or any(value <= 0 for value in durations):
+        raise ValueError("search_duration_family_days must contain positive values")
     if tuple(sorted(set(durations))) != durations:
         raise ValueError("search_duration_family_days must be sorted and unique")
     return durations
 
 
 def _validate_input(event: BlindCandidateInput) -> tuple[float, ...]:
-    if not event.target_id.strip():
-        raise ValueError("target_id must be non-empty")
-    if not event.target_name.strip():
-        raise ValueError("target_name must be non-empty")
+    _nonempty_string(event.target_id, "target_id")
+    _nonempty_string(event.target_name, "target_name")
+    _nonempty_string(event.sector_label, "sector_label")
     if event.event_direction != "dimming":
         raise ValueError("blind candidate inputs must be dimming events")
-    for name, value in (
-        ("center_time_days", event.center_time_days),
-        ("duration_days", event.duration_days),
-        ("depth", event.depth),
-        ("snr", event.snr),
-        ("empirical_familywise_p", event.empirical_familywise_p),
-    ):
-        if not math.isfinite(float(value)):
-            raise ValueError(f"{name} must be finite")
-    if event.duration_days <= 0:
+
+    center = _finite_number(event.center_time_days, "center_time_days")
+    duration = _finite_number(event.duration_days, "duration_days")
+    depth = _finite_number(event.depth, "depth")
+    snr = _finite_number(event.snr, "snr")
+    p_value = _finite_number(
+        event.empirical_familywise_p, "empirical_familywise_p"
+    )
+    if duration <= 0:
         raise ValueError("duration_days must be positive")
-    if event.depth <= 0:
+    if depth <= 0:
         raise ValueError("depth must be positive")
-    if event.snr < 0:
+    if snr < 0:
         raise ValueError("snr must be non-negative")
-    if not 0 <= event.empirical_familywise_p <= 1:
+    if not 0 <= p_value <= 1:
         raise ValueError("empirical_familywise_p must lie in [0, 1]")
     if (
         isinstance(event.source_event_index, bool)
@@ -146,15 +191,39 @@ def _validate_input(event: BlindCandidateInput) -> tuple[float, ...]:
         or event.source_event_index < 0
     ):
         raise ValueError("source_event_index must be a non-negative exact integer")
-    if not _SHA256_PATTERN.fullmatch(event.campaign_input_combined_sha256):
-        raise ValueError("campaign_input_combined_sha256 must be lowercase SHA-256")
-    durations = _validated_duration_family(event)
-    for name, value in (
-        ("matched_brightening_snr", event.matched_brightening_snr),
-        ("snr_above_matched_control", event.snr_above_matched_control),
+    if (
+        not isinstance(event.campaign_input_combined_sha256, str)
+        or _SHA256_PATTERN.fullmatch(event.campaign_input_combined_sha256) is None
     ):
-        if value is not None and not math.isfinite(float(value)):
-            raise ValueError(f"{name} must be finite when present")
+        raise ValueError("campaign_input_combined_sha256 must be lowercase SHA-256")
+
+    durations = _validated_duration_family(event)
+    if not any(math.isclose(duration, value, rel_tol=0.0, abs_tol=1e-12) for value in durations):
+        raise ValueError("duration_days must belong to the frozen search-duration family")
+
+    matched_missing = event.matched_brightening_snr is None
+    margin_missing = event.snr_above_matched_control is None
+    if matched_missing != margin_missing:
+        raise ValueError(
+            "matched_brightening_snr and snr_above_matched_control must be both "
+            "present or both absent"
+        )
+    if not matched_missing:
+        matched = _finite_number(
+            event.matched_brightening_snr, "matched_brightening_snr"
+        )
+        margin = _finite_number(
+            event.snr_above_matched_control, "snr_above_matched_control"
+        )
+        if matched < 0:
+            raise ValueError("matched_brightening_snr must be non-negative")
+        if not math.isclose(snr - matched, margin, rel_tol=1e-12, abs_tol=1e-12):
+            raise ValueError(
+                "snr_above_matched_control must equal snr - matched_brightening_snr"
+            )
+
+    # Force evaluation so malformed values cannot hide behind type annotations.
+    _ = center
     return durations
 
 
@@ -194,14 +263,11 @@ def _candidate_id(event: BlindCandidateInput, source_commit: str) -> str:
 def _screen_reasons(
     event: BlindCandidateInput,
     q_value: float,
-    *,
-    target_familywise_alpha: float,
-    table_fdr_alpha: float,
 ) -> tuple[str, ...]:
     reasons: list[str] = []
-    if event.empirical_familywise_p > target_familywise_alpha:
+    if event.empirical_familywise_p > TARGET_FAMILYWISE_ALPHA:
         reasons.append("target-familywise-p-above-threshold")
-    if q_value > table_fdr_alpha:
+    if q_value > TABLE_FDR_ALPHA:
         reasons.append("table-bh-q-above-threshold")
     if event.snr_above_matched_control is None:
         reasons.append("missing-matched-brightening-control")
@@ -215,33 +281,54 @@ def freeze_candidate_table(
     *,
     source_commit: str,
     frozen_at_utc: str,
-    target_familywise_alpha: float = 0.05,
-    table_fdr_alpha: float = 0.10,
+    target_familywise_alpha: float = TARGET_FAMILYWISE_ALPHA,
+    table_fdr_alpha: float = TABLE_FDR_ALPHA,
 ) -> FrozenCandidateTable:
     """Freeze one top machine-selected dimming event per campaign input.
 
-    The function consumes only machine evidence. Human notes, plots, target fame, and
-    astrophysical interpretation are deliberately absent from the input schema.
+    The Phase 0.8 schema fixes both statistical thresholds. Human notes, plots, target
+    fame, and astrophysical interpretation are deliberately absent from the input.
     """
-    if not _GIT_SHA_PATTERN.fullmatch(source_commit):
+    if not isinstance(source_commit, str) or _GIT_SHA_PATTERN.fullmatch(source_commit) is None:
         raise ValueError("source_commit must be a lowercase 40-character Git SHA")
-    if not frozen_at_utc.strip():
-        raise ValueError("frozen_at_utc must be non-empty")
-    if not 0 < target_familywise_alpha < 1:
-        raise ValueError("target_familywise_alpha must lie in (0, 1)")
-    if not 0 < table_fdr_alpha < 1:
-        raise ValueError("table_fdr_alpha must lie in (0, 1)")
+    frozen_at_utc = _validate_utc_timestamp(frozen_at_utc)
+
+    target_alpha = _finite_number(
+        target_familywise_alpha, "target_familywise_alpha"
+    )
+    fdr_alpha = _finite_number(table_fdr_alpha, "table_fdr_alpha")
+    if not math.isclose(
+        target_alpha, TARGET_FAMILYWISE_ALPHA, rel_tol=0.0, abs_tol=1e-12
+    ):
+        raise ValueError("Phase 0.8 target familywise alpha is frozen at 0.05")
+    if not math.isclose(fdr_alpha, TABLE_FDR_ALPHA, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("Phase 0.8 table FDR alpha is frozen at 0.10")
 
     grouped: dict[tuple[str, str], list[BlindCandidateInput]] = defaultdict(list)
     duration_families: set[tuple[float, ...]] = set()
+    hash_owners: dict[str, str] = {}
     for event in events:
         duration_families.add(_validate_input(event))
+        owner = hash_owners.setdefault(
+            event.campaign_input_combined_sha256, event.target_id
+        )
+        if owner != event.target_id:
+            raise ValueError("one campaign-input hash cannot belong to multiple targets")
         grouped[(event.target_id, event.campaign_input_combined_sha256)].append(event)
     if len(duration_families) > 1:
         raise ValueError("all events in one frozen table must share one duration family")
 
     selected: list[tuple[BlindCandidateInput, int]] = []
     for group in grouped.values():
+        target_names = {event.target_name for event in group}
+        sector_labels = {event.sector_label for event in group}
+        source_indices = [event.source_event_index for event in group]
+        if len(target_names) != 1:
+            raise ValueError("one campaign input cannot contain multiple target names")
+        if len(sector_labels) != 1:
+            raise ValueError("one campaign input cannot contain multiple sector labels")
+        if len(set(source_indices)) != len(source_indices):
+            raise ValueError("source_event_index must be unique within a campaign input")
         winner = min(group, key=_selection_key)
         selected.append((winner, len(group)))
     selected.sort(
@@ -257,12 +344,7 @@ def freeze_candidate_table(
     )
     provisional: list[dict[str, object]] = []
     for (event, competing_count), q_value in zip(selected, q_values):
-        reasons = _screen_reasons(
-            event,
-            q_value,
-            target_familywise_alpha=target_familywise_alpha,
-            table_fdr_alpha=table_fdr_alpha,
-        )
+        reasons = _screen_reasons(event, q_value)
         provisional.append(
             {
                 "event": event,
@@ -315,8 +397,10 @@ def freeze_candidate_table(
                     else float(event.snr_above_matched_control)
                 ),
                 campaign_input_combined_sha256=event.campaign_input_combined_sha256,
-                search_duration_family_days=tuple(event.search_duration_family_days),
-                source_event_index=int(event.source_event_index),
+                search_duration_family_days=tuple(
+                    float(value) for value in event.search_duration_family_days
+                ),
+                source_event_index=event.source_event_index,
                 competing_events_considered=int(row["competing_count"]),
                 blind_priority_rank=rank,
                 blind_status="screened-in" if not reasons else "screened-out",
@@ -326,23 +410,14 @@ def freeze_candidate_table(
             )
         )
 
-    selection_rule = (
-        "one event per (target_id,campaign_input_sha256), selected by ascending "
-        "target-familywise p, descending matched-control margin, descending SNR, "
-        "descending depth, ascending time and source index"
-    )
-    ranking_rule = (
-        "screened-in first; then ascending BH q and familywise p, descending "
-        "matched-control margin and SNR, then deterministic target/time ties"
-    )
     hash_payload = {
         "schema": CANDIDATE_SCHEMA,
         "source_commit": source_commit,
         "frozen_at_utc": frozen_at_utc,
-        "target_familywise_alpha": target_familywise_alpha,
-        "table_fdr_alpha": table_fdr_alpha,
-        "selection_rule": selection_rule,
-        "ranking_rule": ranking_rule,
+        "target_familywise_alpha": TARGET_FAMILYWISE_ALPHA,
+        "table_fdr_alpha": TABLE_FDR_ALPHA,
+        "selection_rule": SELECTION_RULE,
+        "ranking_rule": RANKING_RULE,
         "candidates": [record.to_dict() for record in records],
     }
     table_hash = canonical_json_sha256(hash_payload)
@@ -350,10 +425,10 @@ def freeze_candidate_table(
         schema=CANDIDATE_SCHEMA,
         source_commit=source_commit,
         frozen_at_utc=frozen_at_utc,
-        target_familywise_alpha=target_familywise_alpha,
-        table_fdr_alpha=table_fdr_alpha,
-        selection_rule=selection_rule,
-        ranking_rule=ranking_rule,
+        target_familywise_alpha=TARGET_FAMILYWISE_ALPHA,
+        table_fdr_alpha=TABLE_FDR_ALPHA,
+        selection_rule=SELECTION_RULE,
+        ranking_rule=RANKING_RULE,
         candidates=tuple(records),
         table_sha256=table_hash,
     )
