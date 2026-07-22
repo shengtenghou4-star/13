@@ -23,6 +23,36 @@ def _json_scalar(value: Any) -> Any:
     return str(value)
 
 
+def _fingerprinted_lightcurve(
+    time: np.ndarray,
+    flux: np.ndarray,
+    flux_err: np.ndarray | None,
+    *,
+    target: str,
+    metadata: dict[str, Any],
+) -> LightCurve:
+    """Construct first, then hash the exact cleaned and sorted analyzed arrays."""
+    prepared = LightCurve(
+        time,
+        flux,
+        flux_err,
+        target=target,
+        metadata=metadata,
+    )
+    array_hashes = lightcurve_array_hashes(
+        prepared.time,
+        prepared.flux,
+        prepared.flux_err,
+    )
+    return LightCurve(
+        prepared.time,
+        prepared.flux,
+        prepared.flux_err,
+        target=prepared.target,
+        metadata={**prepared.metadata, "analyzed_array_hashes": array_hashes},
+    )
+
+
 def download_tess_lightcurve(
     target: str,
     *,
@@ -108,7 +138,6 @@ def download_tess_lightcurve(
             product.setdefault("sector", int(getattr(curve, "sector")))
         products.append(product)
 
-    array_hashes = lightcurve_array_hashes(time, flux, flux_err)
     query_provenance = {
         "target": target,
         "author_filter_requested": author,
@@ -118,23 +147,23 @@ def download_tess_lightcurve(
         "sectors_downloaded": sectors,
         "product_provenance": products,
     }
-    return LightCurve(
+    metadata = {
+        "source": "MAST/TESS via Lightkurve",
+        "author_filter_requested": author,
+        "author_filter_used": author_used,
+        "sectors": sectors,
+        "products": len(collection),
+        "product_provenance": products,
+        "product_provenance_sha256": canonical_json_sha256(products),
+        "query_provenance_sha256": canonical_json_sha256(query_provenance),
+        "max_products": max_products,
+    }
+    return _fingerprinted_lightcurve(
         time,
         flux,
         flux_err,
         target=target,
-        metadata={
-            "source": "MAST/TESS via Lightkurve",
-            "author_filter_requested": author,
-            "author_filter_used": author_used,
-            "sectors": sectors,
-            "products": len(collection),
-            "product_provenance": products,
-            "product_provenance_sha256": canonical_json_sha256(products),
-            "query_provenance_sha256": canonical_json_sha256(query_provenance),
-            "analyzed_array_hashes": array_hashes,
-            "max_products": max_products,
-        },
+        metadata=metadata,
     )
 
 
