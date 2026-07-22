@@ -185,9 +185,29 @@ def search_single_transits(
     flatten_window_days: float = 1.5,
     min_snr: float = 5.0,
     max_events: int = 20,
+    direction: str = "dimming",
 ) -> list[SingleTransitEvent]:
-    """Find isolated box-like dimming events without assuming a period."""
-    clean = flatten_lightcurve(lc.normalized().sigma_clipped(), flatten_window_days)
+    """Find isolated box-like excursions without assuming a period.
+
+    ``direction="dimming"`` searches transit-like downward events. The mirror
+    ``direction="brightening"`` search is used as an empirical same-light-curve
+    control for flares and instrumental excursions.
+    """
+    if direction not in {"dimming", "brightening"}:
+        raise ValueError("direction must be 'dimming' or 'brightening'")
+    if min_snr <= 0:
+        raise ValueError("min_snr must be positive")
+    if max_events < 1:
+        raise ValueError("max_events must be positive")
+    if any(duration <= 0 for duration in durations):
+        raise ValueError("durations must be positive")
+
+    normalized = lc.normalized()
+    if direction == "dimming":
+        clipped = normalized.sigma_clipped(clip_positive=True, clip_negative=False)
+    else:
+        clipped = normalized.sigma_clipped(clip_positive=False, clip_negative=True)
+    clean = flatten_lightcurve(clipped, flatten_window_days)
     flux = clean.flux
     baseline = float(np.nanmedian(flux))
     noise = _robust_sigma(flux)
@@ -198,8 +218,11 @@ def search_single_transits(
         width = max(3, int(round(duration / cadence)))
         kernel = np.ones(width, dtype=float) / width
         local_mean = np.convolve(flux, kernel, mode="same")
-        depth = baseline - local_mean
-        snr = depth / noise * math.sqrt(width)
+        if direction == "dimming":
+            amplitude = baseline - local_mean
+        else:
+            amplitude = local_mean - baseline
+        snr = amplitude / noise * math.sqrt(width)
 
         half = width // 2
         for idx in range(half, len(flux) - half):
@@ -213,9 +236,10 @@ def search_single_transits(
                     target=lc.target,
                     center_time_days=float(clean.time[idx]),
                     duration_days=float(duration),
-                    depth=float(depth[idx]),
+                    depth=float(amplitude[idx]),
                     snr=float(snr[idx]),
                     local_points=width,
+                    direction=direction,
                 )
             )
 
