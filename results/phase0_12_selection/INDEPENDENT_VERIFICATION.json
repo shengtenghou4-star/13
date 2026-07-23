@@ -1,0 +1,55 @@
+{
+  "accepted": true,
+  "artifact_id": "8565277714",
+  "artifact_zip_sha256": "b6a7f0294e38aec283c34cf73df26ef293327eb8dff89ca11819e41a465c52d5",
+  "astronomical_claim": "none",
+  "campaign_lock_sha256": "6681a7f1890d124d12f78b00028978dc2084ef55eb70c34d9bd6bad6e7fe351c",
+  "candidate_details_disclosed": false,
+  "ciphertext_sha256": "e6dbef6269a138c22ccdb1dc717fde05a8ca9e961f98c49a2436ebfca2bd4b81",
+  "decision_counts": {
+    "excluded": 13,
+    "not-needed": 19,
+    "selected": 64
+  },
+  "errors": [],
+  "input_csv_files": 64,
+  "job_id": "89217589613",
+  "maximum_distinct_sectors_per_selected_target": 4,
+  "maximum_products_per_selected_target": 4,
+  "minimum_distinct_sectors_per_selected_target": 2,
+  "minimum_products_per_selected_target": 2,
+  "nonselected_reason_counts": {
+    "acquisition-or-quality-other": 1,
+    "nasa-confirmed-transiting-host": 2,
+    "quality-distinct_sectors": 3,
+    "quality-products": 7,
+    "stratum-quota-already-filled": 19
+  },
+  "plaintext_archive_sha256": "e743d44cf2ad485f9d686157ea86b7113812cbedda003fbd98bceda333a33daa",
+  "pool_rows": 96,
+  "private_ledger_commit": "68af286d5b8f20d5fb4e500b98a56e9028c897cb",
+  "private_manifest_files": 70,
+  "private_manifest_sha256": "18c3b351fa24600ef8b8f68a2633fe4869c582a1f5f33649b913b953a4aee096",
+  "schema": "houearth-phase12-selection-independent-verification-v1",
+  "search_started": false,
+  "selected_per_batch": {
+    "1": 16,
+    "2": 16,
+    "3": 16,
+    "4": 16
+  },
+  "selected_per_stratum": {
+    "cool-dwarf": 16,
+    "harder-control": 16,
+    "rv-host": 16,
+    "solar-analog": 16
+  },
+  "selected_targets": 64,
+  "selection_lock_sha256": "fa33ec95129e77e1b6a50bb1d58ebd094b7e465a86a74f50bae2bd3bf5a8658f",
+  "surrogate_trials_executed": 0,
+  "temporary_harness_commit": "c9f9c4710887e4760e296e2a89b12a9b4d446524",
+  "total_distinct_sector_appearances": 201,
+  "total_downloaded_products": 238,
+  "validated_source": "9bd607924d65270922cb9a053f1cfa116eb1b858",
+  "workflow_run_id": "30010659771"
+}
