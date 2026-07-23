@@ -1,0 +1,1 @@
+Phase 0.12 candidate-safe receipts will be archived here only after encrypted real execution and authenticated private verification.
