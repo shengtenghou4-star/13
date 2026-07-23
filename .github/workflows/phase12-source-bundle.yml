@@ -10,30 +10,47 @@ on:
 permissions:
   contents: read
 
+env:
+  EXACT_SOURCE: "758f56098bcdc871627bc3fc92daa2cbd25dbcce"
+
 jobs:
   bundle:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout temporary bundler branch
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - name: Verify exact source parent
+
+      - name: Checkout exact validated source
+        uses: actions/checkout@v4
+        with:
+          repository: shengtenghou4-star/13
+          ref: ${{ env.EXACT_SOURCE }}
+          path: exact-source
+          fetch-depth: 1
+
+      - name: Verify exact source
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
-          python -c "import pathlib; assert pathlib.Path('src/houearth/phase12_resume_campaign.py').is_file()"
+          test "$(git -C exact-source rev-parse HEAD)" = "$EXACT_SOURCE"
+          test "$(git -C exact-source status --porcelain)" = ""
+          test -f exact-source/src/houearth/phase12_resume_campaign.py
+          test -f exact-source/src/houearth/phase12_locked_inputs.py
+
       - name: Build deterministic source archive
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p source-bundle
-          git archive --format=tar.gz \
-            --prefix=houearth-758f56098bcdc871627bc3fc92daa2cbd25dbcce/ \
-            -o source-bundle/houearth-758f56098bcdc871627bc3fc92daa2cbd25dbcce.tar.gz \
-            758f56098bcdc871627bc3fc92daa2cbd25dbcce
+          git -C exact-source archive --format=tar.gz \
+            --prefix=houearth-${EXACT_SOURCE}/ \
+            -o "../source-bundle/houearth-${EXACT_SOURCE}.tar.gz" \
+            "$EXACT_SOURCE"
           sha256sum source-bundle/*.tar.gz > source-bundle/SHA256SUMS.txt
-          printf '%s\n' "758f56098bcdc871627bc3fc92daa2cbd25dbcce" > source-bundle/SOURCE_COMMIT.txt
+          printf '%s\n' "$EXACT_SOURCE" > source-bundle/SOURCE_COMMIT.txt
+
       - uses: actions/upload-artifact@v4
         with:
           name: houearth-phase12-exact-source
