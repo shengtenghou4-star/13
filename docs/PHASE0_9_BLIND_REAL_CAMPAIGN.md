@@ -40,7 +40,7 @@ Dimming events are canonically ordered by center time, duration, descending SNR,
 
 The method repository is public. The real command therefore must require an explicit private evidence sink, must not have a public automatic real-data workflow, and must print only aggregate counts and cryptographic commitments. Event identities, times, depths, SNRs, ranks, raw surrogate trials, and candidate rows belong only in an access-controlled evidence location.
 
-Public CI runs synthetic fixtures only. Synthetic artifacts contain no astronomical candidates.
+Public CI runs synthetic fixtures only. Synthetic artifacts contain no astronomical candidates. The first real-data execution is a separate private step and is never implied by a green public workflow.
 
 ## Required private evidence
 
