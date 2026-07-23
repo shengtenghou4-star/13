@@ -41,7 +41,23 @@ jobs:
       - name: Verify Phase 0.12 development package
         run: python -c "import houearth; assert houearth.__version__ == '0.12.0.dev0'"
       - name: Attack locked bytes, hashes, batch identity, and no-network boundary
-        run: pytest -q tests/test_phase12_locked_resume.py
+        shell: bash
+        run: |
+          set +e
+          mkdir -p outputs/phase12-locked-diagnostics
+          pytest -q tests/test_phase12_locked_resume.py \
+            > outputs/phase12-locked-diagnostics/targeted-pytest.log 2>&1
+          status=$?
+          cat outputs/phase12-locked-diagnostics/targeted-pytest.log
+          exit "$status"
+      - name: Upload targeted test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase12-locked-resume-diagnostics
+          path: outputs/phase12-locked-diagnostics/
+          if-no-files-found: error
+          retention-days: 7
       - name: Run complete repository regression
         run: pytest -q
       - name: Run original synthetic CLI smoke test
