@@ -146,7 +146,9 @@ def test_private_sink_rejects_missing_or_public_authorization(tmp_path: Path) ->
     sink = tmp_path / "evidence"
     with pytest.raises(PrivateCampaignError, match="HOU_PRIVATE_EVIDENCE_SINK"):
         require_private_evidence_sink(sink, environ={})
-    with pytest.raises(PrivateCampaignError, match="visibility"):
+    with pytest.raises(
+        PrivateCampaignError, match="HOU_PRIVATE_REPOSITORY_VISIBILITY"
+    ):
         require_private_evidence_sink(
             sink,
             environ={
