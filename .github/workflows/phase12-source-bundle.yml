@@ -1,0 +1,42 @@
+name: Phase 0.12 exact source bundle
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/phase12-source-bundle.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Verify exact source parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          python -c "import pathlib; assert pathlib.Path('src/houearth/phase12_resume_campaign.py').is_file()"
+      - name: Build deterministic source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p source-bundle
+          git archive --format=tar.gz \
+            --prefix=houearth-758f56098bcdc871627bc3fc92daa2cbd25dbcce/ \
+            -o source-bundle/houearth-758f56098bcdc871627bc3fc92daa2cbd25dbcce.tar.gz \
+            758f56098bcdc871627bc3fc92daa2cbd25dbcce
+          sha256sum source-bundle/*.tar.gz > source-bundle/SHA256SUMS.txt
+          printf '%s\n' "758f56098bcdc871627bc3fc92daa2cbd25dbcce" > source-bundle/SOURCE_COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: houearth-phase12-exact-source
+          path: source-bundle/
+          if-no-files-found: error
+          retention-days: 7
