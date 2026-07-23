@@ -1,0 +1,50 @@
+name: Phase 0.12 batched multisector validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/phase12-validation.yml"
+      - "data/phase12_batched_multisector_pool.csv"
+      - "docs/PHASE0_12_BATCHED_MULTISECTOR_CAMPAIGN.md"
+      - "examples/run_phase12_private_real_campaign.py"
+      - "pyproject.toml"
+      - "src/houearth/**"
+      - "tests/test_phase12_*.py"
+  push:
+    branches:
+      - main
+      - "agent/v0.12-*"
+    paths:
+      - ".github/workflows/phase12-validation.yml"
+      - "data/phase12_batched_multisector_pool.csv"
+      - "docs/PHASE0_12_BATCHED_MULTISECTOR_CAMPAIGN.md"
+      - "examples/run_phase12_private_real_campaign.py"
+      - "pyproject.toml"
+      - "src/houearth/**"
+      - "tests/test_phase12_*.py"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  batched-multisector-protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Verify development package version
+        run: python -c "import houearth; assert houearth.__version__ == '0.12.0.dev0'"
+      - name: Test 96-row pool, multisector gates, deterministic batches, and global evidence
+        run: pytest -q tests/test_phase12_protocol.py tests/test_phase12_campaign.py
+      - name: Run complete repository regression
+        run: pytest -q
+      - name: Run original synthetic CLI smoke test
+        run: houearth synthetic --baseline 30 --min-period 2 --max-period 12 --output outputs/phase12-cli-smoke
