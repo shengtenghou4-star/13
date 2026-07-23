@@ -59,6 +59,19 @@ from .physical_evaluation import (
     PhysicalInjectionTrial,
     run_physical_campaign,
 )
+from .private_campaign import PrivateCampaignResult, run_phase10_private_campaign
+from .private_campaign_protocol import (
+    PHASE10_PRIVATE_GUARD_ENV,
+    PHASE10_PRIVATE_MANIFEST_SCHEMA,
+    PHASE10_PRIVATE_RECEIPT_SCHEMA,
+    PHASE10_REQUIRED_TARGET_IDS,
+    PHASE10_VISIBILITY_ENV,
+    PrivateCampaignError,
+    PrivateCampaignTarget,
+    acquire_and_lock_inputs,
+    load_phase10_manifest,
+    require_private_evidence_sink,
+)
 from .protocol_validation import (
     ProtocolValidationError,
     ProtocolValidationReport,
@@ -126,9 +139,17 @@ __all__ = [
     "PHASE09_SEARCH_DURATION_FAMILY_DAYS",
     "PHASE09_SURROGATE_BLOCK_DAYS",
     "PHASE09_SURROGATE_SEEDS",
+    "PHASE10_PRIVATE_GUARD_ENV",
+    "PHASE10_PRIVATE_MANIFEST_SCHEMA",
+    "PHASE10_PRIVATE_RECEIPT_SCHEMA",
+    "PHASE10_REQUIRED_TARGET_IDS",
+    "PHASE10_VISIBILITY_ENV",
     "PeriodicCandidate",
     "PhysicalCompletenessCell",
     "PhysicalInjectionTrial",
+    "PrivateCampaignError",
+    "PrivateCampaignResult",
+    "PrivateCampaignTarget",
     "ProtocolValidationError",
     "ProtocolValidationReport",
     "RealCompletenessCell",
@@ -139,6 +160,7 @@ __all__ = [
     "SurrogateCalibratedTrial",
     "SurrogateSummary",
     "SurrogateTrial",
+    "acquire_and_lock_inputs",
     "benjamini_hochberg_qvalues",
     "build_blind_candidate_inputs",
     "calibrate_physical_trials",
@@ -153,8 +175,11 @@ __all__ = [
     "freeze_candidate_table",
     "inject_physical_single_transit",
     "lightcurve_array_hashes",
+    "load_phase10_manifest",
     "physical_single_event_search_durations",
     "physical_single_transit_decrement",
+    "require_private_evidence_sink",
+    "run_phase10_private_campaign",
     "run_physical_campaign",
     "run_real_lightcurve_campaign",
     "run_surrogate_null_campaign",
@@ -171,4 +196,4 @@ __all__ = [
     "write_frozen_candidate_table",
 ]
 
-__version__ = "0.9.0.dev0"
+__version__ = "0.10.0.dev0"

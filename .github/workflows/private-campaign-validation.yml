@@ -1,0 +1,90 @@
+name: Phase 0.10 private campaign validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/private-campaign-validation.yml"
+      - "docs/PHASE0_10_PRIVATE_REAL_CAMPAIGN.md"
+      - "examples/run_phase10_private_fixture.py"
+      - "examples/run_phase10_private_real_campaign.py"
+      - "pyproject.toml"
+      - "src/houearth/**"
+      - "tests/**"
+  push:
+    branches:
+      - main
+      - "agent/v0.10-*"
+    paths:
+      - ".github/workflows/private-campaign-validation.yml"
+      - "docs/PHASE0_10_PRIVATE_REAL_CAMPAIGN.md"
+      - "examples/run_phase10_private_fixture.py"
+      - "examples/run_phase10_private_real_campaign.py"
+      - "pyproject.toml"
+      - "src/houearth/**"
+      - "tests/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-private-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Verify development package version
+        run: python -c "import houearth; assert houearth.__version__ == '0.10.0.dev0'"
+      - name: Test private authorization and all-or-nothing acquisition
+        run: pytest -q tests/test_private_campaign.py
+      - name: Run complete repository regression
+        run: pytest -q
+      - name: Resolve immutable source commit
+        id: source
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
+            echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Generate synthetic private-boundary fixture
+        run: >-
+          python examples/run_phase10_private_fixture.py
+          --source-commit "${{ steps.source.outputs.sha }}"
+          --output outputs/private-campaign-fixture-v0.10
+      - name: Independently revalidate serialized candidate table
+        run: >-
+          python examples/validate_frozen_candidate_table.py
+          outputs/private-campaign-fixture-v0.10/candidate_evidence/candidate_table.json
+          --report outputs/private-campaign-fixture-v0.10/validation/second_table_validation.json
+      - name: Independently revalidate serialized complete event evidence
+        run: >-
+          python examples/validate_candidate_evidence.py
+          outputs/private-campaign-fixture-v0.10/candidate_evidence/candidate_evidence.json
+          --report outputs/private-campaign-fixture-v0.10/validation/second_evidence_validation.json
+      - name: Independently revalidate serialized campaign evidence
+        run: >-
+          python examples/validate_candidate_campaign_evidence.py
+          outputs/private-campaign-fixture-v0.10/candidate_campaign_evidence.json
+          --report outputs/private-campaign-fixture-v0.10/validation/second_campaign_validation.json
+      - name: Assert candidate-safe public receipt
+        run: >-
+          python -c "import json,pathlib;
+          p=json.loads(pathlib.Path('outputs/private-campaign-fixture-v0.10/PUBLIC_AGGREGATE_RECEIPT.json').read_text());
+          assert p['candidate_details_disclosed'] is False;
+          assert p['all_unopened'] and p['all_unclassified'] and p['all_validations_accepted']"
+      - name: Record validated commit
+        run: echo "${{ steps.source.outputs.sha }}" > outputs/private-campaign-fixture-v0.10/validated_commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: private-campaign-fixture-v0.10
+          path: outputs/private-campaign-fixture-v0.10/
