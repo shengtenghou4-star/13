@@ -1,0 +1,46 @@
+{
+  "schema": "houearth-blind-real-campaign-lock-v0.9.0",
+  "source_commit": "2088fb15f513a623611febe252a49716d4aa9949",
+  "frozen_at_utc": "2026-07-23T00:00:00Z",
+  "manifest_sha256": "8473f9b228c8b9c5997c74bb19b2bdb09b6a203e1b595e34f53e00e67b86fa4a",
+  "eligible_target_rule": "surrogate_policy == unmasked-null",
+  "excluded_targets": [],
+  "search_duration_family_days": [0.052, 0.08, 0.104, 0.116, 0.16, 0.232],
+  "flatten_window_days": 1.5,
+  "minimum_search_snr": 5.0,
+  "maximum_machine_events_per_direction": 200,
+  "surrogate_method": "gap-aware-circular-moving-block-bootstrap",
+  "surrogate_seeds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63],
+  "surrogate_block_days": 0.5,
+  "surrogate_gap_factor": 3.5,
+  "targets": [
+    {
+      "target_id": "fixture-null-a",
+      "query": "SYNTHETIC NULL A",
+      "intended_role": "synthetic-null",
+      "sector_label": "101",
+      "campaign_input_combined_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "query_provenance_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "product_provenance_sha256": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    {
+      "target_id": "fixture-null-b",
+      "query": "SYNTHETIC NULL B",
+      "intended_role": "synthetic-null",
+      "sector_label": "102",
+      "campaign_input_combined_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "query_provenance_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "product_provenance_sha256": "8888888888888888888888888888888888888888888888888888888888888888"
+    },
+    {
+      "target_id": "fixture-null-c",
+      "query": "SYNTHETIC NULL C",
+      "intended_role": "synthetic-null",
+      "sector_label": "103",
+      "campaign_input_combined_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "query_provenance_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+      "product_provenance_sha256": "9999999999999999999999999999999999999999999999999999999999999999"
+    }
+  ],
+  "campaign_lock_sha256": "4cb84bd045340f353eece60606e8dedc63ec26e70db8a858ee495b943243bea6"
+}

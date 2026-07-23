@@ -1,0 +1,15 @@
+{
+  "status": "synthetic Phase 0.9 fixture; no astronomical claim",
+  "source_commit": "2088fb15f513a623611febe252a49716d4aa9949",
+  "targets": 3,
+  "surrogate_trials": 192,
+  "machine_events": 6,
+  "candidate_rows": 3,
+  "screened_in": 2,
+  "all_unopened": true,
+  "all_unclassified": true,
+  "candidate_table_sha256": "1cceb342680663c17698b80d3d8de136e50b32cd3fe5de610c825793b87cd632",
+  "candidate_evidence_sha256": "f75316b8d8aae65353433a0f495968b1a70510604528c59cba2f0d2acc6f0fa1",
+  "candidate_campaign_evidence_sha256": "55b5efd7f8a22887f70c0a4e10777e75f04ff507350f75cbe431e7caba90fe1b",
+  "all_validations_accepted": true
+}

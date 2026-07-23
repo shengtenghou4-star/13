@@ -1,0 +1,33 @@
+{
+  "all_unclassified": true,
+  "all_unopened": true,
+  "astronomical_claim": "none",
+  "candidate_campaign_evidence_sha256": "55b5efd7f8a22887f70c0a4e10777e75f04ff507350f75cbe431e7caba90fe1b",
+  "candidate_evidence_sha256": "f75316b8d8aae65353433a0f495968b1a70510604528c59cba2f0d2acc6f0fa1",
+  "candidate_rows": 3,
+  "candidate_safe": true,
+  "candidate_table_sha256": "1cceb342680663c17698b80d3d8de136e50b32cd3fe5de610c825793b87cd632",
+  "fixture_file_sha256": {
+    "campaign_lock.json": "468b87e299faea8214453de3856945697ca7486a98564ecfe310579ff955ae77",
+    "candidate_campaign_evidence.json": "01a6165c81d74eb168fbb031b8cc1b5ccf112b00419ddb7b768b1da704139c1e",
+    "candidate_campaign_validation_report.json": "cc5a9098a083ec2774c708ac5940b379d1baa7f2ac8146901e0dc7aa226c1a61",
+    "candidate_evidence.json": "13bab9401b68d10fd6d04089033d72a2079226ecbdbcf45186ff40cdafc77ceb",
+    "candidate_evidence_validation_report.json": "f8754203ceae481d667c3eda96db24e78735050a6479152399b5c7fe2994ba4f",
+    "candidate_table.csv": "a5acf18cb4eba3cf9b20443bf88c68474d23f689f1a71d40d5d3fbdf6f69735d",
+    "candidate_table.json": "f4bde906ea85b385a2e514afe2a35d5d81bd03010e54c6e949d3fbc307af5e86",
+    "machine_events.json": "6be0c5e3210905d1ab23cee78207d0798162178b1e6cd594a2b49f0a7d5a0432",
+    "second_campaign_validation_report.json": "cc5a9098a083ec2774c708ac5940b379d1baa7f2ac8146901e0dc7aa226c1a61",
+    "second_evidence_validation_report.json": "f8754203ceae481d667c3eda96db24e78735050a6479152399b5c7fe2994ba4f",
+    "second_table_validation_report.json": "51bb23188aa853cc162190420fdafe1e4dfc26ea9503b962afbfbd66e2f56124",
+    "summary.json": "7f11cb12dfe1e1eb2f5763340b1464c8b0e011900bf6a0a750d3a6c37695c772",
+    "table_validation_report.json": "51bb23188aa853cc162190420fdafe1e4dfc26ea9503b962afbfbd66e2f56124",
+    "target_calibration_inputs.json": "285920baa58c04f4b57fae9cd3d95fb935b590b2c645455e748c203baab9c000"
+  },
+  "independent_reports_accepted": [true, true, true],
+  "machine_events": 6,
+  "schema": "houearth-phase09-public-validation-receipt-v1",
+  "screened_in": 2,
+  "surrogate_trials": 192,
+  "targets": 3,
+  "validated_commit": "2088fb15f513a623611febe252a49716d4aa9949"
+}

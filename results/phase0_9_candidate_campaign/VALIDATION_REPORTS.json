@@ -1,0 +1,26 @@
+{
+  "validated_source_head": "2088fb15f513a623611febe252a49716d4aa9949",
+  "candidate_table": {
+    "protocol": "HOU-EARTH Phase 0.8 frozen blind candidate table",
+    "accepted": true,
+    "candidates": 3,
+    "screened_in": 2,
+    "errors": []
+  },
+  "complete_machine_event_evidence": {
+    "protocol": "HOU-EARTH Phase 0.8 complete machine-event evidence package",
+    "accepted": true,
+    "machine_events": 6,
+    "campaign_inputs": 3,
+    "candidates": 3,
+    "errors": []
+  },
+  "candidate_campaign": {
+    "protocol": "HOU-EARTH Phase 0.9 blind real-campaign calibration evidence",
+    "accepted": true,
+    "targets": 3,
+    "surrogate_trials": 192,
+    "machine_events": 6,
+    "errors": []
+  }
+}
