@@ -1,0 +1,13 @@
+{
+  "fixture_only": true,
+  "astronomical_claim": "none",
+  "source_commit": "3cfa022cfdbc596b5f9ac0f77bde766e7371bf92",
+  "input_events": 4,
+  "frozen_campaign_rows": 3,
+  "screened_in_rows": 2,
+  "machine_events_sha256": "a06b94ea6b5195678154cde7316b57a53bbee2ae90cbfcec170d20ffdd163409",
+  "candidate_table_sha256": "09ac4d9e07713188d4851e8ab987980976d61d853be9be238fd610893d1818e8",
+  "evidence_package_sha256": "0530bf5a139141d05b117af2a8a1f12051e606a003e3937637ee5d43b32ed6fe",
+  "table_validation_accepted": true,
+  "event_stream_validation_accepted": true
+}
