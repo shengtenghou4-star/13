@@ -1,0 +1,97 @@
+target_id,query,author,sectors,max_products,stratum,pool_rank,selection_source,surrogate_policy,archive_aliases,notes
+hd-20630,HD 20630,SPOC,,4,solar-analog,1,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 20630;kappa1 Ceti,Phase 0.12 frozen rank 1 in solar-analog; multi-sector eligibility decided before search
+hd-72905,HD 72905,SPOC,,4,solar-analog,2,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 72905,Phase 0.12 frozen rank 2 in solar-analog; multi-sector eligibility decided before search
+hd-10307,HD 10307,SPOC,,4,solar-analog,3,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 10307,Phase 0.12 frozen rank 3 in solar-analog; multi-sector eligibility decided before search
+hd-95128,HD 95128,SPOC,,4,solar-analog,4,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 95128;47 UMa,Phase 0.12 frozen rank 4 in solar-analog; multi-sector eligibility decided before search
+hd-186408,HD 186408,SPOC,,4,solar-analog,5,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 186408;16 Cyg A,Phase 0.12 frozen rank 5 in solar-analog; multi-sector eligibility decided before search
+hd-186427,HD 186427,SPOC,,4,solar-analog,6,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 186427;16 Cyg B,Phase 0.12 frozen rank 6 in solar-analog; multi-sector eligibility decided before search
+hd-101364,HD 101364,SPOC,,4,solar-analog,7,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 101364,Phase 0.12 frozen rank 7 in solar-analog; multi-sector eligibility decided before search
+hd-126053,HD 126053,SPOC,,4,solar-analog,8,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 126053,Phase 0.12 frozen rank 8 in solar-analog; multi-sector eligibility decided before search
+hd-143436,HD 143436,SPOC,,4,solar-analog,9,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 143436,Phase 0.12 frozen rank 9 in solar-analog; multi-sector eligibility decided before search
+hd-147513,HD 147513,SPOC,,4,solar-analog,10,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 147513,Phase 0.12 frozen rank 10 in solar-analog; multi-sector eligibility decided before search
+hd-168009,HD 168009,SPOC,,4,solar-analog,11,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 168009,Phase 0.12 frozen rank 11 in solar-analog; multi-sector eligibility decided before search
+hd-197027,HD 197027,SPOC,,4,solar-analog,12,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 197027,Phase 0.12 frozen rank 12 in solar-analog; multi-sector eligibility decided before search
+hd-210918,HD 210918,SPOC,,4,solar-analog,13,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 210918,Phase 0.12 frozen rank 13 in solar-analog; multi-sector eligibility decided before search
+hd-222582,HD 222582,SPOC,,4,solar-analog,14,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 222582,Phase 0.12 frozen rank 14 in solar-analog; multi-sector eligibility decided before search
+hd-44594,HD 44594,SPOC,,4,solar-analog,15,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 44594,Phase 0.12 frozen rank 15 in solar-analog; multi-sector eligibility decided before search
+hd-98618,HD 98618,SPOC,,4,solar-analog,16,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 98618,Phase 0.12 frozen rank 16 in solar-analog; multi-sector eligibility decided before search
+hd-45184,HD 45184,SPOC,,4,solar-analog,17,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 45184,Phase 0.12 frozen rank 17 in solar-analog; multi-sector eligibility decided before search
+hd-20619,HD 20619,SPOC,,4,solar-analog,18,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 20619,Phase 0.12 frozen rank 18 in solar-analog; multi-sector eligibility decided before search
+hd-42618,HD 42618,SPOC,,4,solar-analog,19,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 42618,Phase 0.12 frozen rank 19 in solar-analog; multi-sector eligibility decided before search
+hd-71334,HD 71334,SPOC,,4,solar-analog,20,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 71334,Phase 0.12 frozen rank 20 in solar-analog; multi-sector eligibility decided before search
+hd-117939,HD 117939,SPOC,,4,solar-analog,21,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 117939,Phase 0.12 frozen rank 21 in solar-analog; multi-sector eligibility decided before search
+hd-138573,HD 138573,SPOC,,4,solar-analog,22,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 138573,Phase 0.12 frozen rank 22 in solar-analog; multi-sector eligibility decided before search
+hd-150248,HD 150248,SPOC,,4,solar-analog,23,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 150248,Phase 0.12 frozen rank 23 in solar-analog; multi-sector eligibility decided before search
+hd-159222,HD 159222,SPOC,,4,solar-analog,24,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 159222,Phase 0.12 frozen rank 24 in solar-analog; multi-sector eligibility decided before search
+hd-1461,HD 1461,SPOC,,4,rv-host,1,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 1461,Phase 0.12 frozen rank 1 in rv-host; multi-sector eligibility decided before search
+hd-3651,HD 3651,SPOC,,4,rv-host,2,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 3651,Phase 0.12 frozen rank 2 in rv-host; multi-sector eligibility decided before search
+hd-4203,HD 4203,SPOC,,4,rv-host,3,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 4203,Phase 0.12 frozen rank 3 in rv-host; multi-sector eligibility decided before search
+hd-4208,HD 4208,SPOC,,4,rv-host,4,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 4208,Phase 0.12 frozen rank 4 in rv-host; multi-sector eligibility decided before search
+hd-7924,HD 7924,SPOC,,4,rv-host,5,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 7924,Phase 0.12 frozen rank 5 in rv-host; multi-sector eligibility decided before search
+hd-16141,HD 16141,SPOC,,4,rv-host,6,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 16141,Phase 0.12 frozen rank 6 in rv-host; multi-sector eligibility decided before search
+hd-19994,HD 19994,SPOC,,4,rv-host,7,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 19994;94 Cet,Phase 0.12 frozen rank 7 in rv-host; multi-sector eligibility decided before search
+hd-28185,HD 28185,SPOC,,4,rv-host,8,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 28185,Phase 0.12 frozen rank 8 in rv-host; multi-sector eligibility decided before search
+hd-30177,HD 30177,SPOC,,4,rv-host,9,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 30177,Phase 0.12 frozen rank 9 in rv-host; multi-sector eligibility decided before search
+hd-33636,HD 33636,SPOC,,4,rv-host,10,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 33636,Phase 0.12 frozen rank 10 in rv-host; multi-sector eligibility decided before search
+hd-37124,HD 37124,SPOC,,4,rv-host,11,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 37124,Phase 0.12 frozen rank 11 in rv-host; multi-sector eligibility decided before search
+hd-39091,HD 39091,SPOC,,4,rv-host,12,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 39091;pi Mensae,Phase 0.12 frozen rank 12 in rv-host; multi-sector eligibility decided before search
+hd-40979,HD 40979,SPOC,,4,rv-host,13,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 40979,Phase 0.12 frozen rank 13 in rv-host; multi-sector eligibility decided before search
+hd-45350,HD 45350,SPOC,,4,rv-host,14,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 45350,Phase 0.12 frozen rank 14 in rv-host; multi-sector eligibility decided before search
+hd-50499,HD 50499,SPOC,,4,rv-host,15,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 50499,Phase 0.12 frozen rank 15 in rv-host; multi-sector eligibility decided before search
+hd-50554,HD 50554,SPOC,,4,rv-host,16,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 50554,Phase 0.12 frozen rank 16 in rv-host; multi-sector eligibility decided before search
+hd-52265,HD 52265,SPOC,,4,rv-host,17,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 52265,Phase 0.12 frozen rank 17 in rv-host; multi-sector eligibility decided before search
+hd-70642,HD 70642,SPOC,,4,rv-host,18,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 70642,Phase 0.12 frozen rank 18 in rv-host; multi-sector eligibility decided before search
+hd-73256,HD 73256,SPOC,,4,rv-host,19,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 73256,Phase 0.12 frozen rank 19 in rv-host; multi-sector eligibility decided before search
+hd-74156,HD 74156,SPOC,,4,rv-host,20,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 74156,Phase 0.12 frozen rank 20 in rv-host; multi-sector eligibility decided before search
+hd-114783,HD 114783,SPOC,,4,rv-host,21,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 114783,Phase 0.12 frozen rank 21 in rv-host; multi-sector eligibility decided before search
+hd-117176,HD 117176,SPOC,,4,rv-host,22,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 117176;70 Vir,Phase 0.12 frozen rank 22 in rv-host; multi-sector eligibility decided before search
+hd-134987,HD 134987,SPOC,,4,rv-host,23,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 134987,Phase 0.12 frozen rank 23 in rv-host; multi-sector eligibility decided before search
+hd-210277,HD 210277,SPOC,,4,rv-host,24,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 210277,Phase 0.12 frozen rank 24 in rv-host; multi-sector eligibility decided before search
+barnards-star,Barnard's Star,SPOC,,4,cool-dwarf,1,predeclared-nearby-multisector-pool-v1,unmasked-null,Barnard's Star;GJ 699,Phase 0.12 frozen rank 1 in cool-dwarf; multi-sector eligibility decided before search
+lalande-21185,Lalande 21185,SPOC,,4,cool-dwarf,2,predeclared-nearby-multisector-pool-v1,unmasked-null,Lalande 21185;GJ 411,Phase 0.12 frozen rank 2 in cool-dwarf; multi-sector eligibility decided before search
+wolf-359,Wolf 359,SPOC,,4,cool-dwarf,3,predeclared-nearby-multisector-pool-v1,unmasked-null,Wolf 359;GJ 406,Phase 0.12 frozen rank 3 in cool-dwarf; multi-sector eligibility decided before search
+ross-128,Ross 128,SPOC,,4,cool-dwarf,4,predeclared-nearby-multisector-pool-v1,unmasked-null,Ross 128;GJ 447,Phase 0.12 frozen rank 4 in cool-dwarf; multi-sector eligibility decided before search
+proxima-centauri,Proxima Centauri,SPOC,,4,cool-dwarf,5,predeclared-nearby-multisector-pool-v1,unmasked-null,Proxima Centauri;GJ 551,Phase 0.12 frozen rank 5 in cool-dwarf; multi-sector eligibility decided before search
+gj-1061,GJ 1061,SPOC,,4,cool-dwarf,6,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 1061,Phase 0.12 frozen rank 6 in cool-dwarf; multi-sector eligibility decided before search
+gj-273,GJ 273,SPOC,,4,cool-dwarf,7,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 273;Luyten's Star,Phase 0.12 frozen rank 7 in cool-dwarf; multi-sector eligibility decided before search
+gj-667-c,GJ 667 C,SPOC,,4,cool-dwarf,8,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 667 C,Phase 0.12 frozen rank 8 in cool-dwarf; multi-sector eligibility decided before search
+gj-832,GJ 832,SPOC,,4,cool-dwarf,9,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 832,Phase 0.12 frozen rank 9 in cool-dwarf; multi-sector eligibility decided before search
+gj-876,GJ 876,SPOC,,4,cool-dwarf,10,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 876,Phase 0.12 frozen rank 10 in cool-dwarf; multi-sector eligibility decided before search
+gj-581,GJ 581,SPOC,,4,cool-dwarf,11,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 581,Phase 0.12 frozen rank 11 in cool-dwarf; multi-sector eligibility decided before search
+gj-15-a,GJ 15 A,SPOC,,4,cool-dwarf,12,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 15 A,Phase 0.12 frozen rank 12 in cool-dwarf; multi-sector eligibility decided before search
+gj-887,GJ 887,SPOC,,4,cool-dwarf,13,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 887,Phase 0.12 frozen rank 13 in cool-dwarf; multi-sector eligibility decided before search
+gj-682,GJ 682,SPOC,,4,cool-dwarf,14,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 682,Phase 0.12 frozen rank 14 in cool-dwarf; multi-sector eligibility decided before search
+gj-163,GJ 163,SPOC,,4,cool-dwarf,15,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 163,Phase 0.12 frozen rank 15 in cool-dwarf; multi-sector eligibility decided before search
+gj-180,GJ 180,SPOC,,4,cool-dwarf,16,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 180,Phase 0.12 frozen rank 16 in cool-dwarf; multi-sector eligibility decided before search
+gj-3293,GJ 3293,SPOC,,4,cool-dwarf,17,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 3293,Phase 0.12 frozen rank 17 in cool-dwarf; multi-sector eligibility decided before search
+gj-433,GJ 433,SPOC,,4,cool-dwarf,18,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 433,Phase 0.12 frozen rank 18 in cool-dwarf; multi-sector eligibility decided before search
+gj-674,GJ 674,SPOC,,4,cool-dwarf,19,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 674,Phase 0.12 frozen rank 19 in cool-dwarf; multi-sector eligibility decided before search
+gj-676-a,GJ 676 A,SPOC,,4,cool-dwarf,20,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 676 A,Phase 0.12 frozen rank 20 in cool-dwarf; multi-sector eligibility decided before search
+gj-849,GJ 849,SPOC,,4,cool-dwarf,21,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 849,Phase 0.12 frozen rank 21 in cool-dwarf; multi-sector eligibility decided before search
+gj-1148,GJ 1148,SPOC,,4,cool-dwarf,22,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 1148,Phase 0.12 frozen rank 22 in cool-dwarf; multi-sector eligibility decided before search
+gj-317,GJ 317,SPOC,,4,cool-dwarf,23,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 317,Phase 0.12 frozen rank 23 in cool-dwarf; multi-sector eligibility decided before search
+gj-436,GJ 436,SPOC,,4,cool-dwarf,24,predeclared-nearby-multisector-pool-v1,unmasked-null,GJ 436,Phase 0.12 frozen rank 24 in cool-dwarf; multi-sector eligibility decided before search
+hd-105,HD 105,SPOC,,4,harder-control,1,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 105,Phase 0.12 frozen rank 1 in harder-control; multi-sector eligibility decided before search
+hd-377,HD 377,SPOC,,4,harder-control,2,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 377,Phase 0.12 frozen rank 2 in harder-control; multi-sector eligibility decided before search
+hd-15745,HD 15745,SPOC,,4,harder-control,3,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 15745,Phase 0.12 frozen rank 3 in harder-control; multi-sector eligibility decided before search
+hd-21997,HD 21997,SPOC,,4,harder-control,4,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 21997,Phase 0.12 frozen rank 4 in harder-control; multi-sector eligibility decided before search
+hd-32297,HD 32297,SPOC,,4,harder-control,5,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 32297,Phase 0.12 frozen rank 5 in harder-control; multi-sector eligibility decided before search
+hd-92945,HD 92945,SPOC,,4,harder-control,6,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 92945,Phase 0.12 frozen rank 6 in harder-control; multi-sector eligibility decided before search
+hd-95086,HD 95086,SPOC,,4,harder-control,7,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 95086,Phase 0.12 frozen rank 7 in harder-control; multi-sector eligibility decided before search
+hd-104860,HD 104860,SPOC,,4,harder-control,8,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 104860,Phase 0.12 frozen rank 8 in harder-control; multi-sector eligibility decided before search
+hd-110058,HD 110058,SPOC,,4,harder-control,9,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 110058,Phase 0.12 frozen rank 9 in harder-control; multi-sector eligibility decided before search
+hd-111520,HD 111520,SPOC,,4,harder-control,10,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 111520,Phase 0.12 frozen rank 10 in harder-control; multi-sector eligibility decided before search
+hd-131488,HD 131488,SPOC,,4,harder-control,11,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 131488,Phase 0.12 frozen rank 11 in harder-control; multi-sector eligibility decided before search
+hd-141569,HD 141569,SPOC,,4,harder-control,12,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 141569,Phase 0.12 frozen rank 12 in harder-control; multi-sector eligibility decided before search
+hd-145560,HD 145560,SPOC,,4,harder-control,13,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 145560,Phase 0.12 frozen rank 13 in harder-control; multi-sector eligibility decided before search
+hd-15115,HD 15115,SPOC,,4,harder-control,14,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 15115,Phase 0.12 frozen rank 14 in harder-control; multi-sector eligibility decided before search
+hd-156623,HD 156623,SPOC,,4,harder-control,15,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 156623,Phase 0.12 frozen rank 15 in harder-control; multi-sector eligibility decided before search
+hd-157728,HD 157728,SPOC,,4,harder-control,16,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 157728,Phase 0.12 frozen rank 16 in harder-control; multi-sector eligibility decided before search
+hd-172555,HD 172555,SPOC,,4,harder-control,17,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 172555,Phase 0.12 frozen rank 17 in harder-control; multi-sector eligibility decided before search
+hd-181296,HD 181296,SPOC,,4,harder-control,18,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 181296;eta Tel,Phase 0.12 frozen rank 18 in harder-control; multi-sector eligibility decided before search
+hd-181327,HD 181327,SPOC,,4,harder-control,19,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 181327,Phase 0.12 frozen rank 19 in harder-control; multi-sector eligibility decided before search
+hd-191089,HD 191089,SPOC,,4,harder-control,20,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 191089,Phase 0.12 frozen rank 20 in harder-control; multi-sector eligibility decided before search
+hd-202917,HD 202917,SPOC,,4,harder-control,21,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 202917,Phase 0.12 frozen rank 21 in harder-control; multi-sector eligibility decided before search
+hd-206893,HD 206893,SPOC,,4,harder-control,22,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 206893,Phase 0.12 frozen rank 22 in harder-control; multi-sector eligibility decided before search
+hd-218396,HD 218396,SPOC,,4,harder-control,23,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 218396;HR 8799,Phase 0.12 frozen rank 23 in harder-control; multi-sector eligibility decided before search
+hd-221853,HD 221853,SPOC,,4,harder-control,24,predeclared-nearby-multisector-pool-v1,unmasked-null,HD 221853,Phase 0.12 frozen rank 24 in harder-control; multi-sector eligibility decided before search

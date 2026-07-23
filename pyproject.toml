@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "houearth"
-version = "0.11.0.dev0"
+version = "0.12.0.dev0"
 description = "Open TESS transit search and candidate-vetting toolkit"
 readme = "README.md"
 requires-python = ">=3.10"
