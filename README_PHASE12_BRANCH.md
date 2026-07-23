@@ -1,1 +1,0 @@
-Phase 0.12 development branch marker. The authoritative protocol is documented in docs/PHASE0_12_BATCHED_MULTISECTOR_CAMPAIGN.md.
