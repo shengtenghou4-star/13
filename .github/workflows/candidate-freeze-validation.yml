@@ -1,0 +1,90 @@
+name: Blind candidate table validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/candidate-freeze-validation.yml"
+      - "docs/PHASE0_8_FROZEN_CANDIDATE_PROTOCOL.md"
+      - "examples/run_candidate_freeze_fixture.py"
+      - "examples/validate_candidate_evidence.py"
+      - "examples/validate_frozen_candidate_table.py"
+      - "pyproject.toml"
+      - "src/houearth/**"
+      - "tests/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/candidate-freeze-validation.yml"
+      - "docs/PHASE0_8_FROZEN_CANDIDATE_PROTOCOL.md"
+      - "examples/run_candidate_freeze_fixture.py"
+      - "examples/validate_candidate_evidence.py"
+      - "examples/validate_frozen_candidate_table.py"
+      - "pyproject.toml"
+      - "src/houearth/**"
+      - "tests/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  freeze-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Verify development package version
+        run: python -c "import houearth; assert houearth.__version__ == '0.8.0.dev0'"
+      - name: Test blind table construction
+        run: pytest -q tests/test_candidate_freeze.py tests/test_candidate_freeze_guardrails.py
+      - name: Test closed candidate table schemas
+        run: pytest -q tests/test_candidate_closed_schema.py
+      - name: Test independent candidate table validation attacks
+        run: pytest -q tests/test_candidate_protocol_validation.py
+      - name: Test complete machine event evidence attacks
+        run: pytest -q tests/test_candidate_evidence.py
+      - name: Run full repository test suite
+        run: pytest -q
+      - name: Run original synthetic CLI smoke test
+        run: houearth synthetic --baseline 30 --min-period 2 --max-period 12 --output outputs/external-ci-demo
+      - name: Resolve immutable source commit
+        id: source
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
+            echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Generate deterministic complete candidate evidence fixture
+        run: >-
+          python examples/run_candidate_freeze_fixture.py
+          --source-commit "${{ steps.source.outputs.sha }}"
+          --output outputs/candidate-freeze-fixture-v0.8
+      - name: Independently validate serialized candidate table
+        run: >-
+          python examples/validate_frozen_candidate_table.py
+          outputs/candidate-freeze-fixture-v0.8/candidate_table.json
+          --report outputs/candidate-freeze-fixture-v0.8/second_table_validation_report.json
+      - name: Independently validate complete serialized event evidence
+        run: >-
+          python examples/validate_candidate_evidence.py
+          outputs/candidate-freeze-fixture-v0.8/candidate_evidence.json
+          --report outputs/candidate-freeze-fixture-v0.8/second_evidence_validation_report.json
+      - name: Record validated commit
+        run: echo "${{ steps.source.outputs.sha }}" > outputs/candidate-freeze-fixture-v0.8/validated_commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate-freeze-fixture-v0.8
+          path: |
+            outputs/candidate-freeze-fixture-v0.8/
+            outputs/external-ci-demo/
