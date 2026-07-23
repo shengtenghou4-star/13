@@ -1,0 +1,49 @@
+{
+  "all_unclassified": true,
+  "all_unopened": true,
+  "all_validations_accepted": true,
+  "astronomical_claim": "none",
+  "batches": {
+    "count": 4,
+    "size": 16
+  },
+  "batchwise_candidate_tables": false,
+  "candidate_details_disclosed": false,
+  "candidate_rows": 62,
+  "checkpointed_execution": true,
+  "commitments": {
+    "accepted_envelope_ciphertext_sha256": "487bac2747594c03c090d42c49a2494ea2b75e8eebb063163eed37da291de2d4",
+    "accepted_envelope_public_key_sha256": "e7f881547bf9882a7ab201f02ff1958ac2d390aa702f3661ce2770d8dc5a02ab",
+    "accepted_envelope_zip_sha256": "ac897d1e7cde9b726fa8dcf2917d3245053d639def38fcbee307a1c738a1f052",
+    "authenticated_plaintext_archive_sha256": "9f56b014e79338a0ffa4706e338f6d507676fc1ec4cb726f300add128e47a70d",
+    "batch_receipts_sha256": "d42eca161bf16bb0901a2018b0553d0c62eb33d7e8ef53e6c1bfd969ac85f4eb",
+    "candidate_campaign_evidence_sha256": "7f835189b6b15da051f8357e043797f18836dbc4c62548431ce56fe72e2dde5b",
+    "candidate_evidence_sha256": "15efed322f687ca2a716c20378665b69781915edc0325884510063a3ac705cbc",
+    "candidate_table_sha256": "daf76d9461352d96107f279eccfa687480a84dafaa28d0a143e3f94486bd1825",
+    "final_private_manifest_sha256": "dfe289b2d5feee30ff39398172e9441e048a9cc8e01250f2eedb49afc907fed6",
+    "locked_input_set_sha256": "db84d4114cf5b3b9aac5898f1795b6fce2591f4c8a39e04ba0565dab4782dddf",
+    "search_campaign_lock_sha256": "4be5df6b08253031a4c9d566e315f9863f63d8799322ef724fe0ceae7161fa97",
+    "selection_campaign_lock_sha256": "6681a7f1890d124d12f78b00028978dc2084ef55eb70c34d9bd6bad6e7fe351c",
+    "selection_lock_sha256": "fa33ec95129e77e1b6a50bb1d58ebd094b7e465a86a74f50bae2bd3bf5a8658f",
+    "target_checkpoint_set_sha256": "87c2cbf3509c84afc89d6e87f6faef38a2edd91d92df6e55d37b1c1007380eca"
+  },
+  "frozen_at_utc": "2026-07-23T15:45:37Z",
+  "global_candidate_table": true,
+  "global_multiple_testing_correction": true,
+  "interpretation": "valid pre-registered null campaign; thresholds were not relaxed",
+  "locked_input_csv_files": 64,
+  "machine_events": 2856,
+  "network_downloads_permitted": false,
+  "schema": "houearth-phase12-real-search-public-archive-v1",
+  "screened_in": 0,
+  "selection_source_commit": "9bd607924d65270922cb9a053f1cfa116eb1b858",
+  "source_commit": "758f56098bcdc871627bc3fc92daa2cbd25dbcce",
+  "surrogate_trials": 4096,
+  "target_checkpoints": 64,
+  "targets": 64,
+  "validations_accepted": {
+    "candidate_campaign": true,
+    "candidate_evidence": true,
+    "candidate_table": true
+  }
+}
