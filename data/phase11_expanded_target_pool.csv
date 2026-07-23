@@ -1,0 +1,19 @@
+target_id,query,author,sectors,max_products,stratum,pool_rank,selection_source,surrogate_policy,archive_aliases,notes
+hd-146233,HD 146233,SPOC,,1,solar-analog,1,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 146233;18 Sco,Solar analog ranked before any Phase 0.11 search
+hd-102365,HD 102365,SPOC,,1,solar-analog,2,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 102365,Nearby quiet solar-type reference
+hd-207129,HD 207129,SPOC,,1,solar-analog,3,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 207129,Nearby debris-disk solar-type reference
+hd-38858,HD 38858,SPOC,,1,solar-analog,4,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 38858,Nearby solar-type reference
+hd-76151,HD 76151,SPOC,,1,solar-analog,5,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 76151,Ranked fallback within solar-analog stratum
+hd-30495,HD 30495,SPOC,,1,solar-analog,6,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 30495,Ranked fallback within solar-analog stratum
+hd-40307,HD 40307,SPOC,,1,rv-host,1,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 40307,Known radial-velocity host with no confirmed transiting planet permitted by audit
+hd-85512,HD 85512,SPOC,,1,rv-host,2,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 85512,Known radial-velocity host with no confirmed transiting planet permitted by audit
+hd-115617,HD 115617,SPOC,,1,rv-host,3,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 115617;61 Vir,Known radial-velocity host with alias cross-check
+hd-154345,HD 154345,SPOC,,1,rv-host,4,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 154345,Known radial-velocity host with no confirmed transiting planet permitted by audit
+hd-190360,HD 190360,SPOC,,1,rv-host,5,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 190360,Ranked fallback within radial-velocity-host stratum
+hd-192310,HD 192310,SPOC,,1,rv-host,6,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 192310,Ranked fallback within radial-velocity-host stratum
+hd-22049,HD 22049,SPOC,,1,harder-control,1,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 22049;eps Eri;epsilon Eridani,Active nearby star retained as harder control
+hd-26965,HD 26965,SPOC,,1,harder-control,2,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 26965,Nearby star retained as harder control
+hd-107146,HD 107146,SPOC,,1,harder-control,3,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 107146,Debris-disk star retained as harder control
+hd-53143,HD 53143,SPOC,,1,harder-control,4,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 53143,Debris-disk star retained as harder control
+hd-10647,HD 10647,SPOC,,1,harder-control,5,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 10647,Ranked fallback within harder-control stratum
+hd-61005,HD 61005,SPOC,,1,harder-control,6,predeclared-bright-nearby-nontransit-pool-v1,unmasked-null,HD 61005,Ranked fallback within harder-control stratum
