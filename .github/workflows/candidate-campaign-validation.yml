@@ -13,7 +13,9 @@ on:
       - "src/houearth/**"
       - "tests/**"
   push:
-    branches: [main]
+    branches:
+      - main
+      - "agent/v0.9-*"
     paths:
       - ".github/workflows/candidate-campaign-validation.yml"
       - ".github/workflows/candidate-freeze-validation.yml"
@@ -46,6 +48,8 @@ jobs:
         run: pytest -q tests/test_candidate_campaign.py tests/test_candidate_campaign_validation.py
       - name: Run complete repository regression
         run: pytest -q
+      - name: Run original synthetic CLI smoke test
+        run: houearth synthetic --baseline 30 --min-period 2 --max-period 12 --output outputs/phase09-cli-smoke
       - name: Resolve immutable source commit
         id: source
         shell: bash
@@ -86,4 +90,6 @@ jobs:
         if: always()
         with:
           name: candidate-calibration-fixture-v0.9
-          path: outputs/candidate-calibration-fixture-v0.9/
+          path: |
+            outputs/candidate-calibration-fixture-v0.9/
+            outputs/phase09-cli-smoke/
