@@ -146,6 +146,10 @@ def test_complete_event_evidence_is_input_order_invariant_and_accepted() -> None
         source_commit="a" * 40,
         frozen_at_utc="2026-07-22T10:00:00Z",
     ).to_dict()
+    reversed_evidence["machine_events"] = list(reversed_evidence["machine_events"])
+    reversed_evidence["candidate_table"]["candidates"] = list(
+        reversed_evidence["candidate_table"]["candidates"]
+    )
     assert first["machine_events_sha256"] == reversed_evidence[
         "machine_events_sha256"
     ]
