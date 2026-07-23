@@ -1,5 +1,20 @@
 """HOU-EARTH: an auditable transit-search and calibration toolkit."""
 
+from .candidate_campaign import (
+    PHASE09_CALIBRATION_SCHEMA,
+    PHASE09_CAMPAIGN_EVIDENCE_SCHEMA,
+    PHASE09_SURROGATE_BLOCK_DAYS,
+    PHASE09_SURROGATE_SEEDS,
+    CandidateCalibrationReceipt,
+    build_blind_candidate_inputs,
+    campaign_input_combined_sha256,
+    freeze_candidate_campaign_evidence,
+)
+from .candidate_campaign_validation import (
+    CandidateCampaignValidationError,
+    CandidateCampaignValidationReport,
+    validate_candidate_campaign_evidence,
+)
 from .candidate_evidence import (
     CandidateEvidenceValidationError,
     CandidateEvidenceValidationReport,
@@ -76,6 +91,9 @@ from .surrogates import (
 
 __all__ = [
     "BlindCandidateInput",
+    "CandidateCalibrationReceipt",
+    "CandidateCampaignValidationError",
+    "CandidateCampaignValidationReport",
     "CandidateEvidenceValidationError",
     "CandidateEvidenceValidationReport",
     "CandidateProtocolValidationError",
@@ -92,6 +110,10 @@ __all__ = [
     "LightCurve",
     "LightCurveStratum",
     "NullScreenResult",
+    "PHASE09_CALIBRATION_SCHEMA",
+    "PHASE09_CAMPAIGN_EVIDENCE_SCHEMA",
+    "PHASE09_SURROGATE_BLOCK_DAYS",
+    "PHASE09_SURROGATE_SEEDS",
     "PeriodicCandidate",
     "PhysicalCompletenessCell",
     "PhysicalInjectionTrial",
@@ -106,12 +128,15 @@ __all__ = [
     "SurrogateSummary",
     "SurrogateTrial",
     "benjamini_hochberg_qvalues",
+    "build_blind_candidate_inputs",
     "calibrate_physical_trials",
+    "campaign_input_combined_sha256",
     "canonical_array_sha256",
     "canonical_json_sha256",
     "classify_lightcurve",
     "empirical_familywise_p",
     "exposure_averaged_single_transit_decrement",
+    "freeze_candidate_campaign_evidence",
     "freeze_candidate_evidence",
     "freeze_candidate_table",
     "inject_physical_single_transit",
@@ -124,6 +149,7 @@ __all__ = [
     "search_periodic_transits",
     "search_single_transits",
     "summarize_surrogate_calibrated_trials",
+    "validate_candidate_campaign_evidence",
     "validate_candidate_evidence",
     "validate_frozen_candidate_table",
     "validate_phase07_gap_summary",
@@ -133,4 +159,4 @@ __all__ = [
     "write_frozen_candidate_table",
 ]
 
-__version__ = "0.8.0.dev0"
+__version__ = "0.9.0.dev0"
