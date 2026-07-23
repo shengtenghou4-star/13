@@ -53,8 +53,10 @@ def surrogates(
             gap_factor=3.5,
             neutralized_events=neutralized_events,
             neutralized_points=0,
-            dimming_events=1,
-            brightening_events=1,
+            dimming_events=(
+                1 if values[seed] is not None and values[seed] >= 5.0 else 0
+            ),
+            brightening_events=0,
             maximum_dimming_snr=values[seed],
             maximum_brightening_snr=4.0,
             exceeded_dimming_threshold=values[seed] is not None
@@ -169,7 +171,7 @@ def test_event_target_direction_and_duration_family_are_closed() -> None:
     with pytest.raises(ValueError, match="expected dimming"):
         build([event(1.0, 0.08, 8.0, direction="brightening")], [])
     with pytest.raises(ValueError, match="outside"):
-        build([event(1.0, 0.09, 8.0, direction="dimming")], [])
+        build([event(1.0, 0.09, 8.0, direction="dimming")], [] )
 
 
 def test_campaign_input_hash_must_come_from_fingerprinted_arrays() -> None:
@@ -184,3 +186,45 @@ def test_campaign_input_hash_must_come_from_fingerprinted_arrays() -> None:
     missing = LightCurve(time, np.ones_like(time), target="SYNTHETIC STAR")
     with pytest.raises(ValueError, match="missing campaign_input_array_hashes"):
         campaign_input_combined_sha256(missing)
+
+
+def test_phase09_search_duration_family_is_fixed() -> None:
+    with pytest.raises(ValueError, match="search-duration family is frozen"):
+        build_blind_candidate_inputs(
+            target_id="synthetic-star",
+            target_name="SYNTHETIC STAR",
+            sector_label="1",
+            campaign_input_sha256=HASH,
+            search_duration_family_days=(0.08, 0.16),
+            dimming_events=[],
+            brightening_control_events=[],
+            surrogate_trials=surrogates(),
+        )
+
+
+def test_surrogate_integer_and_threshold_semantics_are_strict() -> None:
+    invalid_segments = surrogates()
+    invalid_segments[0] = SurrogateTrial(
+        **{**invalid_segments[0].to_dict(), "contiguous_segments": True}
+    )
+    with pytest.raises(ValueError, match="contiguous_segments"):
+        build([], [], invalid_segments)
+
+    invalid_count = surrogates()
+    invalid_count[0] = SurrogateTrial(
+        **{
+            **invalid_count[0].to_dict(),
+            "maximum_brightening_snr": 6.0,
+            "exceeded_brightening_threshold": True,
+            "brightening_events": 0,
+        }
+    )
+    with pytest.raises(ValueError, match="brightening event count is inconsistent"):
+        build([], [], invalid_count)
+
+    invalid_flag = surrogates()
+    invalid_flag[0] = SurrogateTrial(
+        **{**invalid_flag[0].to_dict(), "exceeded_dimming_threshold": False}
+    )
+    with pytest.raises(ValueError, match="dimming threshold flag is inconsistent"):
+        build([], [], invalid_flag)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import re
+from datetime import datetime
 from dataclasses import asdict, dataclass
 from numbers import Real
 from typing import Iterable, Mapping, Sequence
@@ -16,7 +17,14 @@ PHASE09_CALIBRATION_SCHEMA = "houearth-target-candidate-calibration-v0.9.0"
 PHASE09_CAMPAIGN_EVIDENCE_SCHEMA = "houearth-blind-candidate-campaign-evidence-v0.9.0"
 PHASE09_SURROGATE_SEEDS = tuple(range(64))
 PHASE09_SURROGATE_BLOCK_DAYS = 0.5
+PHASE09_SEARCH_DURATION_FAMILY_DAYS = (0.052, 0.08, 0.104, 0.116, 0.16, 0.232)
+PHASE09_FLATTEN_WINDOW_DAYS = 1.5
+PHASE09_MINIMUM_SEARCH_SNR = 5.0
+PHASE09_MAX_MACHINE_EVENTS_PER_DIRECTION = 200
+PHASE09_ELIGIBLE_TARGET_RULE = "surrogate_policy == unmasked-null"
+PHASE09_CAMPAIGN_LOCK_SCHEMA = "houearth-blind-real-campaign-lock-v0.9.0"
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+_UTC_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 
 @dataclass(frozen=True)
@@ -125,30 +133,64 @@ def _validate_surrogate_trials(
             raise ValueError("surrogate target or sector does not match the campaign input")
         if trial.method != GAP_AWARE_METHOD:
             raise ValueError("Phase 0.9 requires the frozen gap-aware surrogate method")
+        block_days = _finite_number(trial.block_days, "surrogate block_days")
         if not math.isclose(
-            float(trial.block_days),
+            block_days,
             PHASE09_SURROGATE_BLOCK_DAYS,
             rel_tol=0.0,
             abs_tol=1e-12,
         ):
             raise ValueError("Phase 0.9 surrogate block length is frozen at 0.5 days")
+        gap_factor = _finite_number(trial.gap_factor, "surrogate gap_factor")
         if not math.isclose(
-            float(trial.gap_factor),
+            gap_factor,
             DEFAULT_GAP_FACTOR,
             rel_tol=0.0,
             abs_tol=1e-12,
         ):
             raise ValueError("Phase 0.9 surrogate gap factor is frozen at 3.5")
+        integer_fields = {
+            "contiguous_segments": trial.contiguous_segments,
+            "neutralized_events": trial.neutralized_events,
+            "neutralized_points": trial.neutralized_points,
+            "dimming_events": trial.dimming_events,
+            "brightening_events": trial.brightening_events,
+        }
+        for field, value in integer_fields.items():
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(f"surrogate {field} must be a non-negative exact integer")
         if trial.neutralized_events != 0 or trial.neutralized_points != 0:
             raise ValueError("Phase 0.9 candidate calibration requires an unmasked null")
         if trial.contiguous_segments < 1:
             raise ValueError("surrogate trial must retain at least one observing segment")
         if isinstance(trial.seed, bool) or not isinstance(trial.seed, int):
             raise ValueError("surrogate seed must be an exact integer")
+        if not isinstance(trial.exceeded_dimming_threshold, bool) or not isinstance(
+            trial.exceeded_brightening_threshold, bool
+        ):
+            raise ValueError("surrogate threshold flags must be booleans")
         seeds.append(trial.seed)
         maximum = trial.maximum_dimming_snr
+        maximum_brightening = trial.maximum_brightening_snr
         if maximum is not None and _finite_number(maximum, "maximum_dimming_snr") < 0:
             raise ValueError("surrogate maximum dimming SNR must be non-negative")
+        if maximum_brightening is not None and _finite_number(
+            maximum_brightening, "maximum_brightening_snr"
+        ) < 0:
+            raise ValueError("surrogate maximum brightening SNR must be non-negative")
+        dimming_exceeded = maximum is not None and float(maximum) >= PHASE09_MINIMUM_SEARCH_SNR
+        brightening_exceeded = (
+            maximum_brightening is not None
+            and float(maximum_brightening) >= PHASE09_MINIMUM_SEARCH_SNR
+        )
+        if trial.exceeded_dimming_threshold != dimming_exceeded:
+            raise ValueError("surrogate dimming threshold flag is inconsistent")
+        if trial.exceeded_brightening_threshold != brightening_exceeded:
+            raise ValueError("surrogate brightening threshold flag is inconsistent")
+        if (trial.dimming_events > 0) != dimming_exceeded:
+            raise ValueError("surrogate dimming event count is inconsistent")
+        if (trial.brightening_events > 0) != brightening_exceeded:
+            raise ValueError("surrogate brightening event count is inconsistent")
     if tuple(sorted(seeds)) != PHASE09_SURROGATE_SEEDS or len(set(seeds)) != len(seeds):
         raise ValueError("Phase 0.9 surrogate seeds must be exactly 0 through 63")
     return tuple(sorted(materialized, key=lambda trial: trial.seed))
@@ -205,6 +247,8 @@ def build_blind_candidate_inputs(
         raise ValueError("campaign_input_sha256 must be a lowercase SHA-256")
 
     durations = _duration_family(search_duration_family_days)
+    if durations != PHASE09_SEARCH_DURATION_FAMILY_DAYS:
+        raise ValueError("Phase 0.9 search-duration family is frozen")
     dimming = tuple(dimming_events)
     controls = tuple(brightening_control_events)
     for event in dimming:
@@ -292,8 +336,12 @@ def freeze_candidate_campaign_evidence(
     """Bind the campaign lock, raw calibration inputs, and Phase 0.8 evidence."""
     if not isinstance(source_commit, str) or re.fullmatch(r"[0-9a-f]{40}", source_commit) is None:
         raise ValueError("source_commit must be a lowercase 40-character Git SHA")
-    if not isinstance(frozen_at_utc, str) or not frozen_at_utc.endswith("Z"):
-        raise ValueError("frozen_at_utc must be a UTC timestamp")
+    if not isinstance(frozen_at_utc, str) or _UTC_PATTERN.fullmatch(frozen_at_utc) is None:
+        raise ValueError("frozen_at_utc must use YYYY-MM-DDTHH:MM:SSZ")
+    try:
+        datetime.strptime(frozen_at_utc, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError as exc:
+        raise ValueError("frozen_at_utc is not a valid UTC timestamp") from exc
     lock = dict(campaign_lock)
     lock_hash = lock.get("campaign_lock_sha256")
     if not isinstance(lock_hash, str) or _SHA256_PATTERN.fullmatch(lock_hash) is None:
@@ -313,6 +361,12 @@ def freeze_candidate_campaign_evidence(
     if evidence.get("frozen_at_utc") != frozen_at_utc:
         raise ValueError("candidate evidence freeze time differs from the campaign")
     targets = [dict(target) for target in target_calibrations]
+    targets.sort(
+        key=lambda target: (
+            str(target.get("target_id", "")),
+            str(target.get("campaign_input_combined_sha256", "")),
+        )
+    )
     payload = {
         "schema": PHASE09_CAMPAIGN_EVIDENCE_SCHEMA,
         "source_commit": source_commit,
