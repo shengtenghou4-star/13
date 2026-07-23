@@ -1,0 +1,129 @@
+name: Phase 0.12 encrypted real selection lock
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/phase12-encrypted-selection-lock.yml"
+      - "compute_phase12_selection/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase12-encrypted-selection-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+env:
+  VALIDATED_SOURCE: "9bd607924d65270922cb9a053f1cfa116eb1b858"
+
+jobs:
+  encrypted-selection-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout temporary public compute harness
+        uses: actions/checkout@v4
+
+      - name: Checkout exact HOU-EARTH source
+        uses: actions/checkout@v4
+        with:
+          repository: shengtenghou4-star/13
+          ref: ${{ env.VALIDATED_SOURCE }}
+          path: pipeline
+          fetch-depth: 1
+
+      - name: Verify immutable source and public key
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C pipeline rev-parse HEAD)" = "$VALIDATED_SOURCE"
+          test "$(git -C pipeline status --porcelain)" = ""
+          test "$(sha256sum compute_phase12_selection/phase12_public.pem | cut -d' ' -f1)" = \
+            "5de675160e621dad16f19893e3281263bbd5c694e3e1401b2e9975853bb39f34"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/pyproject.toml
+
+      - name: Install TESS and envelope dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e 'pipeline[dev,tess]' cryptography
+
+      - name: Verify exact Phase 0.12 package and protocol
+        working-directory: pipeline
+        run: |
+          python -c "import houearth; assert houearth.__version__ == '0.12.0.dev0'"
+          pytest -q tests/test_phase12_protocol.py tests/test_phase12_campaign.py
+
+      - name: Select, lock, and encrypt real multi-sector inputs
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -euo pipefail
+          rm -rf sealed-output
+          python compute_phase12_selection/run_select_and_encrypt.py \
+            --pool pipeline/data/phase12_batched_multisector_pool.csv \
+            --source-commit "$VALIDATED_SOURCE" \
+            --public-key compute_phase12_selection/phase12_public.pem \
+            --work-root "$RUNNER_TEMP/hou-earth-phase12-selection-work" \
+            --sealed-output sealed-output
+
+      - name: Prove public artifact contains no plaintext selection evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/hou-earth-phase12-selection-work/plaintext-selection-evidence"
+          test ! -e "$RUNNER_TEMP/hou-earth-phase12-selection-work/phase12-selection-evidence.tar.gz"
+          mapfile -t files < <(find sealed-output -maxdepth 1 -type f -printf '%f\n' | sort)
+          expected=(
+            ENVELOPE_METADATA.json
+            PUBLIC_SELECTION_RECEIPT.json
+            nonce.bin
+            selection_evidence.aesgcm
+            wrapped_key.bin
+          )
+          test "${files[*]}" = "${expected[*]}"
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path("sealed-output")
+          metadata = json.loads((root / "ENVELOPE_METADATA.json").read_text())
+          receipt = json.loads((root / "PUBLIC_SELECTION_RECEIPT.json").read_text())
+          assert receipt["pool_rows"] == 96
+          assert receipt["selected_targets"] == 64
+          assert set(receipt["selected_per_stratum"].values()) == {16}
+          assert receipt["batch_count"] == 4
+          assert set(receipt["selected_per_batch"].values()) == {16}
+          assert receipt["minimum_products_per_selected_target"] >= 2
+          assert receipt["minimum_distinct_sectors_per_selected_target"] >= 2
+          assert receipt["search_started"] is False
+          assert receipt["surrogate_trials_executed"] == 0
+          assert receipt["candidate_details_disclosed"] is False
+          assert metadata["candidate_details_in_public_artifact"] is False
+          assert metadata["search_started"] is False
+          assert hashlib.sha256((root / "selection_evidence.aesgcm").read_bytes()).hexdigest() == metadata["ciphertext_sha256"]
+          assert hashlib.sha256((root / "wrapped_key.bin").read_bytes()).hexdigest() == metadata["wrapped_key_sha256"]
+          assert hashlib.sha256((root / "nonce.bin").read_bytes()).hexdigest() == metadata["nonce_sha256"]
+          PY
+
+      - name: Record temporary harness identity
+        run: |
+          printf '%s\n' "$VALIDATED_SOURCE" > sealed-output/validated_public_source.txt
+          printf '%s\n' "$GITHUB_SHA" > sealed-output/public_harness_commit.txt
+          printf '%s\n' "$GITHUB_RUN_ID" > sealed-output/public_workflow_run_id.txt
+
+      - name: Upload encrypted selection evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: hou-earth-phase12-encrypted-selection-lock
+          path: sealed-output/
+          if-no-files-found: error
+          retention-days: 30
