@@ -41,7 +41,7 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev]'
       - name: Verify development package version
-        run: python -c "import houearth; assert houearth.__version__ == '0.11.0.dev0'"
+        run: python -c "import houearth; assert houearth.__version__ == '0.12.0.dev0'"
       - name: Test frozen pool, catalog audit, deterministic fallback, and private campaign
         run: pytest -q tests/test_phase11_protocol.py tests/test_phase11_campaign.py
       - name: Run complete repository regression
