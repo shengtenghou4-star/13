@@ -89,10 +89,12 @@ class Phase13InjectionTrial:
     depth: float
     duration_days: float
     phase_seed: int
-    injected_center_days: float
-    local_coverage_fraction: float
+    injection_available: bool
+    unavailable_reason: str | None
+    injected_center_days: float | None
+    local_coverage_fraction: float | None
     impact_parameter: float
-    radius_ratio: float
+    radius_ratio: float | None
     exposure_days: float
     locator_recovered: bool
     target_selected: bool
@@ -121,6 +123,8 @@ class Phase13SensitivityCell:
     depth: float
     duration_days: float
     trials: int
+    eligible_trials: int
+    unavailable_trials: int
     locator_recovered: int
     target_gate_recovered: int
     campaign_screened_recovered: int
@@ -304,6 +308,56 @@ def load_phase13_baselines(
     return tuple(baselines)
 
 
+def _phase13_availability_rows(
+    locked: Phase12LockedSelection,
+    baselines: Sequence[Phase13TargetBaseline],
+) -> list[dict[str, object]]:
+    items = {item.target_id: item for item in locked.inputs}
+    if len(items) != 64 or {row.target_id for row in baselines} != set(items):
+        raise ValueError("Phase 0.13 baseline and locked target sets must match exactly")
+    rows: list[dict[str, object]] = []
+    for baseline in baselines:
+        normalized = items[baseline.target_id].lightcurve.normalized()
+        excluded = [*baseline.dimming_events, *baseline.brightening_control_events]
+        for duration in PHASE13_DURATIONS_DAYS:
+            windows = _valid_injection_windows(
+                normalized,
+                duration_days=duration,
+                excluded_events=excluded,
+                gap_factor=PHASE13_GAP_FACTOR,
+                minimum_coverage=PHASE13_MINIMUM_COVERAGE,
+            )
+            rows.append(
+                {
+                    "target_id": baseline.target_id,
+                    "batch_id": baseline.batch_id,
+                    "intended_role": baseline.intended_role,
+                    "duration_days": duration,
+                    "valid_window_count": len(windows),
+                    "available": bool(windows),
+                }
+            )
+    return rows
+
+
+def phase13_slot_available(
+    plan_lock: Mapping[str, object], *, target_id: str, duration_days: float
+) -> bool:
+    rows = plan_lock.get("availability_rows")
+    if not isinstance(rows, Sequence) or isinstance(rows, (str, bytes)):
+        raise Phase13SensitivityError("plan lock availability rows are malformed")
+    matches = [
+        row
+        for row in rows
+        if isinstance(row, Mapping)
+        and str(row.get("target_id", "")) == target_id
+        and float(row.get("duration_days", -1.0)) == float(duration_days)
+    ]
+    if len(matches) != 1:
+        raise Phase13SensitivityError("plan lock availability identity is missing or duplicated")
+    return bool(matches[0].get("available"))
+
+
 def build_phase13_plan_lock(
     locked: Phase12LockedSelection,
     baselines: Sequence[Phase13TargetBaseline],
@@ -315,6 +369,11 @@ def build_phase13_plan_lock(
         raise ValueError("source_commit must be a lowercase 40-character Git SHA")
     if len(baselines) != 64:
         raise ValueError("Phase 0.13 requires 64 baselines")
+    availability_rows = _phase13_availability_rows(locked, baselines)
+    available_duration_cells = sum(bool(row["available"]) for row in availability_rows)
+    available_trial_slots = (
+        available_duration_cells * len(PHASE13_DEPTHS) * len(PHASE13_PHASE_SEEDS)
+    )
     payload = {
         "schema": PHASE13_PLAN_SCHEMA,
         "source_commit": source_commit,
@@ -343,6 +402,16 @@ def build_phase13_plan_lock(
         "phase_seeds": list(PHASE13_PHASE_SEEDS),
         "trials_per_target": PHASE13_TRIALS_PER_TARGET,
         "total_trials": PHASE13_TOTAL_TRIALS,
+        "scheduled_trial_slots": PHASE13_TOTAL_TRIALS,
+        "available_trial_slots": available_trial_slots,
+        "unavailable_trial_slots": PHASE13_TOTAL_TRIALS - available_trial_slots,
+        "available_target_duration_cells": available_duration_cells,
+        "availability_rows": availability_rows,
+        "availability_rows_sha256": canonical_json_sha256(availability_rows),
+        "unavailable_slot_policy": (
+            "record as geometrically unavailable; do not inject, do not count as a "
+            "recovery failure, and do not choose an alternate unregistered center"
+        ),
         "injection_model": "quadratic-limb-darkened-small-planet-exposure-averaged",
         "impact_parameter": PHASE13_IMPACT_PARAMETER,
         "limb_u1": PHASE13_LIMB_U1,

@@ -135,7 +135,11 @@ def main() -> None:
         baseline_machine_rows=machine_rows,
     )
     if receipt["trials"] != PHASE13_TOTAL_TRIALS:
-        raise RuntimeError("Phase 0.13 aggregate trial count differs")
+        raise RuntimeError("Phase 0.13 scheduled slot count differs")
+    if receipt["physical_injections_executed"] != plan["available_trial_slots"]:
+        raise RuntimeError("Phase 0.13 available injection count differs from plan")
+    if receipt["unavailable_trial_slots"] != plan["unavailable_trial_slots"]:
+        raise RuntimeError("Phase 0.13 unavailable slot count differs from plan")
     _write_json(output / "PUBLIC_AGGREGATE_RECEIPT.json", receipt)
 
 

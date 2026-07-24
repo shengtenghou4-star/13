@@ -38,6 +38,7 @@ from .phase13_protocol import (
     Phase13TargetBaseline,
     _trial_id,
     _valid_plan_hash,
+    phase13_slot_available,
 )
 
 
@@ -54,6 +55,9 @@ def run_phase13_injection_trial(
     plan_hash = _valid_plan_hash(plan_lock)
     if item.target_id != baseline.target_id:
         raise Phase13SensitivityError("target and baseline identity differ")
+    planned_available = phase13_slot_available(
+        plan_lock, target_id=baseline.target_id, duration_days=duration_days
+    )
     normalized = item.lightcurve.normalized()
     excluded = [*baseline.dimming_events, *baseline.brightening_control_events]
     windows = _valid_injection_windows(
@@ -63,8 +67,55 @@ def run_phase13_injection_trial(
         gap_factor=PHASE13_GAP_FACTOR,
         minimum_coverage=PHASE13_MINIMUM_COVERAGE,
     )
+    if bool(windows) != planned_available:
+        raise Phase13SensitivityError("real injection availability differs from plan lock")
     if not windows:
-        raise Phase13SensitivityError("no valid injection window under frozen rules")
+        baseline_table = freeze_candidate_table(
+            baseline_machine_rows,
+            source_commit=str(plan_lock["source_commit"]),
+            frozen_at_utc=str(plan_lock["frozen_at_utc"]),
+        )
+        return Phase13InjectionTrial(
+            trial_id=_trial_id(
+                plan_hash=plan_hash,
+                baseline=baseline,
+                depth=depth,
+                duration_days=duration_days,
+                phase_seed=phase_seed,
+            ),
+            target_id=baseline.target_id,
+            target_name=baseline.target_name,
+            sector_label=baseline.sector_label,
+            batch_id=baseline.batch_id,
+            intended_role=baseline.intended_role,
+            campaign_input_combined_sha256=baseline.campaign_input_combined_sha256,
+            locked_csv_sha256=baseline.locked_csv_sha256,
+            depth=depth,
+            duration_days=duration_days,
+            phase_seed=phase_seed,
+            injection_available=False,
+            unavailable_reason="no-valid-window-under-frozen-coverage-gap-and-event-exclusion-rules",
+            injected_center_days=None,
+            local_coverage_fraction=None,
+            impact_parameter=PHASE13_IMPACT_PARAMETER,
+            radius_ratio=None,
+            exposure_days=normalized.cadence,
+            locator_recovered=False,
+            target_selected=False,
+            target_gate_recovered=False,
+            campaign_screened_recovered=False,
+            recovered_center_days=None,
+            recovered_duration_days=None,
+            recovered_snr=None,
+            empirical_familywise_p=None,
+            benjamini_hochberg_q=None,
+            matched_brightening_snr=None,
+            snr_above_matched_control=None,
+            timing_error_days=None,
+            injected_target_machine_events=0,
+            global_machine_events=len(baseline_machine_rows),
+            global_candidate_rows=len(baseline_table.candidates),
+        )
     rng = np.random.default_rng(phase_seed)
     center, coverage = windows[int(rng.integers(0, len(windows)))]
     flux, radius_ratio = inject_physical_single_transit(
@@ -154,6 +205,8 @@ def run_phase13_injection_trial(
         depth=depth,
         duration_days=duration_days,
         phase_seed=phase_seed,
+        injection_available=True,
+        unavailable_reason=None,
         injected_center_days=center,
         local_coverage_fraction=coverage,
         impact_parameter=PHASE13_IMPACT_PARAMETER,
@@ -268,14 +321,39 @@ def validate_phase13_target_checkpoint(
         if trial_id in ids:
             raise Phase13SensitivityError("target checkpoint contains duplicate trial IDs")
         ids.add(trial_id)
+        available = bool(raw.get("injection_available"))
+        planned_available = phase13_slot_available(
+            plan_lock,
+            target_id=baseline.target_id,
+            duration_days=float(raw["duration_days"]),
+        )
+        if available != planned_available:
+            raise Phase13SensitivityError("trial availability differs from plan lock")
         if bool(raw["campaign_screened_recovered"]) and not bool(
             raw["target_gate_recovered"]
         ):
             raise Phase13SensitivityError("campaign recovery lacks target recovery")
         if bool(raw["target_gate_recovered"]) and not bool(raw["locator_recovered"]):
             raise Phase13SensitivityError("target recovery lacks locator recovery")
-        if float(raw["local_coverage_fraction"]) < PHASE13_MINIMUM_COVERAGE:
-            raise Phase13SensitivityError("trial local coverage is below the frozen gate")
+        if not available:
+            if any(
+                bool(raw[field])
+                for field in (
+                    "locator_recovered",
+                    "target_selected",
+                    "target_gate_recovered",
+                    "campaign_screened_recovered",
+                )
+            ):
+                raise Phase13SensitivityError("unavailable trial cannot be recovered")
+            if raw.get("injected_center_days") is not None or raw.get(
+                "local_coverage_fraction"
+            ) is not None:
+                raise Phase13SensitivityError("unavailable trial contains an injection")
+        else:
+            coverage = raw.get("local_coverage_fraction")
+            if coverage is None or float(coverage) < PHASE13_MINIMUM_COVERAGE:
+                raise Phase13SensitivityError("trial local coverage is below the frozen gate")
     expected = {
         (depth, duration, seed)
         for depth in PHASE13_DEPTHS
