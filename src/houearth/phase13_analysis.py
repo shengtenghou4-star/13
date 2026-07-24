@@ -24,7 +24,10 @@ from .phase13_trials import validate_phase13_target_checkpoint
 def summarize_phase13_trials(
     trials: Iterable[Phase13InjectionTrial | Mapping[str, object]],
 ) -> list[Phase13SensitivityCell]:
-    rows = [trial.to_dict() if isinstance(trial, Phase13InjectionTrial) else dict(trial) for trial in trials]
+    rows = [
+        trial.to_dict() if isinstance(trial, Phase13InjectionTrial) else dict(trial)
+        for trial in trials
+    ]
     groups: dict[tuple[str, str | None, float, float], list[dict[str, object]]] = {}
     for row in rows:
         common = (float(row["depth"]), float(row["duration_days"]))
@@ -32,12 +35,14 @@ def summarize_phase13_trials(
         groups.setdefault(("stratum", str(row["intended_role"]), *common), []).append(row)
     cells: list[Phase13SensitivityCell] = []
     for (scope, role, depth, duration), group in sorted(
-        groups.items(), key=lambda item: (item[0][0], str(item[0][1]), item[0][2], item[0][3])
+        groups.items(),
+        key=lambda item: (item[0][0], str(item[0][1]), item[0][2], item[0][3]),
     ):
-        locator = sum(bool(row["locator_recovered"]) for row in group)
-        target = sum(bool(row["target_gate_recovered"]) for row in group)
-        screened = sum(bool(row["campaign_screened_recovered"]) for row in group)
-        low, high = wilson_interval(screened, len(group))
+        eligible = [row for row in group if bool(row.get("injection_available", True))]
+        locator = sum(bool(row["locator_recovered"]) for row in eligible)
+        target = sum(bool(row["target_gate_recovered"]) for row in eligible)
+        screened = sum(bool(row["campaign_screened_recovered"]) for row in eligible)
+        low, high = wilson_interval(target, len(eligible))
         cells.append(
             Phase13SensitivityCell(
                 scope=scope,
@@ -45,12 +50,14 @@ def summarize_phase13_trials(
                 depth=depth,
                 duration_days=duration,
                 trials=len(group),
+                eligible_trials=len(eligible),
+                unavailable_trials=len(group) - len(eligible),
                 locator_recovered=locator,
                 target_gate_recovered=target,
                 campaign_screened_recovered=screened,
-                locator_completeness=locator / len(group),
-                target_gate_completeness=target / len(group),
-                campaign_screened_completeness=screened / len(group),
+                locator_completeness=locator / len(eligible),
+                target_gate_completeness=target / len(eligible),
+                campaign_screened_completeness=screened / len(eligible),
                 confidence_low=low,
                 confidence_high=high,
             )
@@ -79,8 +86,6 @@ def audit_phase13_global_decision_power(
         abs(row.empirical_familywise_p - p_min) <= tolerance
         for row in table.candidates
     )
-    # A single injected target can add at most one minimum-p selected candidate. If
-    # the target previously had no candidate, the BH family grows by one as well.
     optimistic_candidate_count = candidate_count + (1 if missing_targets else 0)
     optimistic_p_min_count = baseline_at_p_min + 1
     required_rank = math.ceil(
@@ -153,6 +158,13 @@ def build_phase13_public_receipt(
         "plan_lock_sha256": plan_lock["plan_lock_sha256"],
         "locked_input_set_sha256": plan_lock["locked_input_set_sha256"],
         "targets": 64,
+        "scheduled_trial_slots": PHASE13_TOTAL_TRIALS,
+        "physical_injections_executed": sum(
+            bool(row.get("injection_available", True)) for row in all_trials
+        ),
+        "unavailable_trial_slots": sum(
+            not bool(row.get("injection_available", True)) for row in all_trials
+        ),
         "trials": PHASE13_TOTAL_TRIALS,
         "depths": list(PHASE13_DEPTHS),
         "durations_days": list(PHASE13_DURATIONS_DAYS),
