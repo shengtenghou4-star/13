@@ -70,20 +70,6 @@ def _surrogates(target: str, sector: str) -> tuple[SurrogateTrial, ...]:
 
 
 def _fixture():
-    lc = _lightcurve()
-    item = Phase12LockedInput(
-        target_id="fixture",
-        query="fixture",
-        intended_role="solar-analog",
-        sector_label="1;2",
-        batch_id=1,
-        stratum_position=1,
-        products=2,
-        distinct_sectors=2,
-        csv_relative_path="campaign_inputs/batch-01/fixture.csv",
-        csv_sha256="a" * 64,
-        lightcurve=lc,
-    )
     controls = (
         SingleTransitEvent(
             target="fixture",
@@ -95,23 +81,48 @@ def _fixture():
             direction="brightening",
         ),
     )
-    baseline = Phase13TargetBaseline(
-        target_id="fixture",
-        target_name="fixture",
-        sector_label="1;2",
-        batch_id=1,
-        intended_role="solar-analog",
-        campaign_input_combined_sha256=lc.metadata["campaign_input_array_hashes"]["combined_sha256"],
-        locked_csv_sha256="a" * 64,
-        dimming_events=(),
-        brightening_control_events=controls,
-        surrogate_trials=_surrogates("fixture", "1;2"),
-        machine_rows=(),
-        calibration_sha256="b" * 64,
-    )
+    items = []
+    baselines = []
+    for index in range(64):
+        target_id = "fixture" if index == 0 else f"fixture-{index}"
+        lc = _lightcurve(target_id)
+        csv_sha = f"{index + 1:064x}"[-64:]
+        item = Phase12LockedInput(
+            target_id=target_id,
+            query=target_id,
+            intended_role="solar-analog",
+            sector_label="1;2",
+            batch_id=index // 16 + 1,
+            stratum_position=index % 16 + 1,
+            products=2,
+            distinct_sectors=2,
+            csv_relative_path=(
+                f"campaign_inputs/batch-{index // 16 + 1:02d}/{target_id}.csv"
+            ),
+            csv_sha256=csv_sha,
+            lightcurve=lc,
+        )
+        baseline = Phase13TargetBaseline(
+            target_id=target_id,
+            target_name=target_id,
+            sector_label="1;2",
+            batch_id=item.batch_id,
+            intended_role="solar-analog",
+            campaign_input_combined_sha256=lc.metadata[
+                "campaign_input_array_hashes"
+            ]["combined_sha256"],
+            locked_csv_sha256=csv_sha,
+            dimming_events=(),
+            brightening_control_events=controls,
+            surrogate_trials=_surrogates(target_id, "1;2"),
+            machine_rows=(),
+            calibration_sha256=f"{index + 1000:064x}"[-64:],
+        )
+        items.append(item)
+        baselines.append(baseline)
     locked = Phase12LockedSelection(
         root="/private",
-        inputs=(item,) * 64,
+        inputs=tuple(items),
         selection_lock={"source_commit": "a" * 40, "selection_lock_sha256": "c" * 64},
         selection_campaign_lock={"campaign_lock_sha256": "d" * 64},
         public_selection_receipt={},
@@ -120,11 +131,11 @@ def _fixture():
     )
     plan = build_phase13_plan_lock(
         locked,
-        [replace(baseline, target_id=f"fixture-{i}") for i in range(64)],
+        baselines,
         source_commit="f" * 40,
         frozen_at_utc="2026-07-24T00:00:00Z",
     )
-    return item, baseline, plan
+    return items[0], baselines[0], plan
 
 
 def test_strong_injection_passes_all_three_recovery_layers() -> None:
@@ -142,6 +153,84 @@ def test_strong_injection_passes_all_three_recovery_layers() -> None:
     assert trial.target_selected
     assert trial.target_gate_recovered
     assert trial.campaign_screened_recovered
+
+
+def test_geometrically_unavailable_slot_is_not_a_recovery_failure() -> None:
+    item, baseline, _ = _fixture()
+    blocking = SingleTransitEvent(
+        target=baseline.target_name,
+        center_time_days=15.0,
+        duration_days=100.0,
+        depth=0.001,
+        snr=20.0,
+        local_points=100,
+        direction="dimming",
+    )
+    blocked = replace(baseline, dimming_events=(blocking,))
+    items = []
+    baselines = []
+    for index in range(64):
+        target_id = blocked.target_id if index == 0 else f"blocked-{index}"
+        lc = _lightcurve(target_id)
+        csv_sha = f"{index + 200:064x}"[-64:]
+        items.append(
+            replace(
+                item,
+                target_id=target_id,
+                query=target_id,
+                batch_id=index // 16 + 1,
+                stratum_position=index % 16 + 1,
+                csv_relative_path=(
+                    f"campaign_inputs/batch-{index // 16 + 1:02d}/{target_id}.csv"
+                ),
+                csv_sha256=csv_sha,
+                lightcurve=lc,
+            )
+        )
+        baselines.append(
+            replace(
+                blocked if index == 0 else baseline,
+                target_id=target_id,
+                target_name=target_id,
+                batch_id=index // 16 + 1,
+                campaign_input_combined_sha256=lc.metadata[
+                    "campaign_input_array_hashes"
+                ]["combined_sha256"],
+                locked_csv_sha256=csv_sha,
+                surrogate_trials=_surrogates(target_id, "1;2"),
+                calibration_sha256=f"{index + 300:064x}"[-64:],
+                dimming_events=(blocking,) if index == 0 else (),
+            )
+        )
+    locked = Phase12LockedSelection(
+        root="/private",
+        inputs=tuple(items),
+        selection_lock={"source_commit": "a" * 40, "selection_lock_sha256": "c" * 64},
+        selection_campaign_lock={"campaign_lock_sha256": "d" * 64},
+        public_selection_receipt={},
+        private_manifest={},
+        locked_input_set_sha256="e" * 64,
+    )
+    plan = build_phase13_plan_lock(
+        locked,
+        baselines,
+        source_commit="f" * 40,
+        frozen_at_utc="2026-07-24T00:00:00Z",
+    )
+    trial = run_phase13_injection_trial(
+        items[0],
+        baselines[0],
+        depth=PHASE13_DEPTHS[0],
+        duration_days=PHASE13_DURATIONS_DAYS[0],
+        phase_seed=13001,
+        plan_lock=plan,
+        baseline_machine_rows=(),
+    )
+    assert trial.injection_available is False
+    assert trial.locator_recovered is False
+    assert trial.target_gate_recovered is False
+    assert trial.campaign_screened_recovered is False
+    assert trial.injected_center_days is None
 
 
 def test_checkpoint_requires_exact_grid(monkeypatch) -> None:
@@ -204,7 +293,9 @@ def test_checkpoint_rejects_resealed_foreign_identity(monkeypatch) -> None:
         )
 
     monkeypatch.setattr("houearth.phase13_trials.run_phase13_injection_trial", fake_trial)
-    checkpoint = run_phase13_target(item, baseline, plan_lock=plan, baseline_machine_rows=())
+    checkpoint = run_phase13_target(
+        item, baseline, plan_lock=plan, baseline_machine_rows=()
+    )
     tampered = json.loads(json.dumps(checkpoint))
     tampered["locked_csv_sha256"] = "9" * 64
     body = {k: v for k, v in tampered.items() if k != "checkpoint_sha256"}
@@ -221,6 +312,7 @@ def test_summary_keeps_three_recovery_layers_distinct() -> None:
                 "depth": PHASE13_DEPTHS[0],
                 "duration_days": PHASE13_DURATIONS_DAYS[0],
                 "intended_role": "solar-analog",
+                "injection_available": True,
                 "locator_recovered": index < 4,
                 "target_gate_recovered": index < 3,
                 "campaign_screened_recovered": index < 2,
@@ -231,17 +323,19 @@ def test_summary_keeps_three_recovery_layers_distinct() -> None:
     assert global_cell.locator_completeness == 1.0
     assert global_cell.target_gate_completeness == 0.75
     assert global_cell.campaign_screened_completeness == 0.5
-    assert global_cell.confidence_low < 0.5 < global_cell.confidence_high
+    assert global_cell.eligible_trials == 4
+    assert global_cell.unavailable_trials == 0
+    assert global_cell.confidence_low < 0.75 < global_cell.confidence_high
 
 
 def test_global_decision_power_audit_detects_resolution_floor() -> None:
     rows = []
-    # Eight minimum-p targets reproduce the critical Phase 0.12 geometry; the
-    # remaining 54 candidate rows have larger p-values and two targets have none.
     for index in range(62):
         p_value = 1.0 / 65.0 if index < 8 else 1.0
         rows.append(
-            __import__("houearth.candidate_freeze", fromlist=["BlindCandidateInput"]).BlindCandidateInput(
+            __import__(
+                "houearth.candidate_freeze", fromlist=["BlindCandidateInput"]
+            ).BlindCandidateInput(
                 target_id=f"t-{index:02d}",
                 target_name=f"T {index}",
                 sector_label="1;2",
@@ -268,4 +362,9 @@ def test_global_decision_power_audit_detects_resolution_floor() -> None:
     assert audit["optimistic_candidates_at_minimum_p_after_one_injection"] == 9
     assert audit["minimum_rank_required_for_bh_at_alpha_0_10"] == 10
     assert audit["single_signal_global_screening_possible"] is False
-    assert audit["minimum_surrogate_trials_for_one_rank_one_candidate_at_current_family_size"] == 629
+    assert (
+        audit[
+            "minimum_surrogate_trials_for_one_rank_one_candidate_at_current_family_size"
+        ]
+        == 629
+    )
