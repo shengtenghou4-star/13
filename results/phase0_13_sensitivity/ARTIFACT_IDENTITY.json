@@ -1,0 +1,14 @@
+{
+  "astronomical_claim": "sensitivity calibration only",
+  "availability_rows_sha256": "02a17b92a7c7a7c5e6456257a1cf7b6bf825cc6f977ec340a1c574882c245cbe",
+  "ciphertext_sha256": "b7eae9ac701e0ba0a50a3a35e7857aa4d1c32171a27d74b5eb6d9fbf10b0106a",
+  "encrypted_envelope_zip_sha256": "1e3186afcd98e55fa21b4ed226126280cf7359b7df4bdbfd8e3ebdbb15f25e7e",
+  "final_envelope_verification_sha256": "88f7f71605bc67018453705f17b281099ce6a656352edc3d81ad45e246905233",
+  "full_public_receipt_sha256": "83bca9ed9e0351257d0784768bbab013fd592784b7e458339e98c6c7ed808f21",
+  "independent_validation_sha256": "3a9699ee12996508cbc11a356a82e458125e002203d6f860e08274a699eb298b",
+  "method_source_commit": "c9181cc618196b85fb2da74885f60ee64603a651",
+  "plan_lock_sha256": "424e82efaaa19feb079c0dc7e4cf5663c37518bdf27e993af3115840aef5f892",
+  "schema": "houearth-phase13-public-artifact-identity-v1",
+  "target_checkpoint_set_sha256": "8188898c143d13d879ac43d6de93d302011d98db50d1d908482552ab5a5c7e49",
+  "target_details_disclosed": false
+}
