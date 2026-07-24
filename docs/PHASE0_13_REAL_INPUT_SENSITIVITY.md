@@ -13,7 +13,9 @@ Every one of the 64 targets receives the same paired grid:
 - intrinsic midpoint depths: 200, 500, 1,000, and 2,000 ppm;
 - total durations: 0.052, 0.08, 0.16, and 0.232 days;
 - two deterministic phase seeds per depth-duration cell;
-- 32 injections per target and 2,048 injections in total.
+- 32 pre-registered slots per target and 2,048 slots in total.
+
+Before any search, the plan lock computes and hashes whether each target-duration cell has at least one valid center. A geometrically unavailable slot is recorded as unavailable, is never injected, and is excluded from the recovery denominator rather than counted as a failure. No alternate center or relaxed coverage rule is introduced after seeing availability.
 
 The same phase seed selects the same valid center across depths for a given target and duration, creating a paired depth experiment. Valid centers must retain at least 70% local cadence coverage, contain no large cadence gap, and avoid every frozen dimming and brightening-control event.
 
@@ -38,7 +40,7 @@ No TESS data are downloaded and no surrogate, SNR, p-value, control, or FDR thre
 2. **Target-gate recovery** — the injected event wins the target's deterministic candidate selection, has target-familywise p <= 0.05, and exceeds the matched brightening control.
 3. **Campaign-screened recovery** — the injected target event stream replaces that target's original stream, all other 63 target streams remain unchanged, and the injected event is screened in after one global Benjamini-Hochberg correction at q <= 0.10.
 
-Target-gate completeness is the primary physical sensitivity metric. Campaign-screened completeness is retained as a decision-power diagnostic.
+Target-gate completeness is the primary physical sensitivity metric and is calculated over eligible physical injections only. Every public cell separately reports scheduled slots, eligible injections, and geometrically unavailable slots. Campaign-screened completeness is retained as a decision-power diagnostic.
 
 ## Structural global-power audit
 
@@ -48,6 +50,6 @@ The result does not invalidate the Phase 0.12 null under its frozen protocol. It
 
 ## Integrity and privacy
 
-Each target becomes an atomic, self-hashed checkpoint only after all 32 trials complete. A checkpoint binds the Phase 0.13 plan lock, exact input and calibration hashes, all trial identities, and all three recovery outcomes. Partial, foreign, duplicated, resealed, or grid-incomplete checkpoints are rejected.
+Each target becomes an atomic, self-hashed checkpoint only after all 32 pre-registered slots are accounted for as either executed or geometrically unavailable. A checkpoint binds the Phase 0.13 plan lock, exact input and calibration hashes, all trial identities, and all three recovery outcomes. Partial, foreign, duplicated, resealed, or grid-incomplete checkpoints are rejected.
 
 Target-level centers, recoveries, SNRs, p-values, q-values, and identities remain private. A public receipt may contain only the frozen plan, aggregate global/stratum completeness cells, the decision-power audit, counts, and cryptographic commitments. This phase is a sensitivity calibration, not an astronomical discovery claim.
