@@ -1,0 +1,19 @@
+{
+  "schema": "houearth-phase14-dimming-only-equivalence-pilot-v0.14.0",
+  "pilot_science_source_commit": "758f56098bcdc871627bc3fc92daa2cbd25dbcce",
+  "frozen_real_inputs_sampled": 4,
+  "deterministic_batches_sampled": 4,
+  "seeds_per_input": 2,
+  "total_seed_input_pairs": 8,
+  "tested_seeds": [64, 65],
+  "full_dual_direction_total_seconds": 23.33382550799996,
+  "dimming_only_total_seconds": 13.967679102999966,
+  "aggregate_speedup": 1.6705585327334977,
+  "maximum_dimming_snr_exact_matches": 8,
+  "maximum_dimming_snr_mismatches": 0,
+  "dimming_only_equivalence_accepted": true,
+  "candidate_details_disclosed": false,
+  "target_identities_disclosed": false,
+  "astronomical_claim": "none",
+  "interpretation": "Skipping the unused surrogate brightening search preserved every dimming maximum exactly in this four-batch real-input pilot and reduced measured CPU time by about 40 percent."
+}
